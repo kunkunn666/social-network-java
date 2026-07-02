@@ -80,6 +80,12 @@ public class SocialGraph {
     public void loadFromCSV(String filepath) {
         clearData();
 
+        File f = new File(filepath);
+        if (!f.exists()) {
+            System.out.println("错误: 文件不存在 - " + filepath);
+            return;
+        }
+
         String nodeFile = findNodeFile(filepath);
 
         try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {

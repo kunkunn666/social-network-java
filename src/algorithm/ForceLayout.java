@@ -2,95 +2,95 @@ package algorithm;
 
 import model.SocialGraph;
 
-/**
- * 节点布局算法
- * 
- * 思路：
- *   1. 先把节点排成一个大圆（每个节点均匀分布在圆上）
- *   2. 然后检查所有节点对，如果有两个距离太近（会重叠），就互相推开一点
- *   3. 重复第2步若干次，直到没有节点重叠为止
- * 
- * 用到的知识：两点间距离公式 sqrt((x1-x2)^2 + (y1-y2)^2)、for循环
- */
 public class ForceLayout {
-
-    // 节点圆的半径倍数，1.0表示占画布短边的35%
-    private double radiusScale = 0.35;
-
-    // 节点之间至少保持这么远（像素），保证不重叠
-    private double minGap = 50;
-
-    // 推开重叠节点的循环次数，多跑几次确保都没重叠
-    private int pushRounds = 50;
+    private double repulsion = 5000;
+    private double attraction = 0.005;
+    private double centerGravity = 0.01;
+    private double maxSpeed = 8;
+    private double minDistance = 45;
 
     public void computeLayout(SocialGraph graph, int width, int height) {
-        int n = graph.nodeCount;
-        if (n == 0) return;
+        circularInit(graph, width, height);
+        double temperature = 100;
 
-        // ========== 第一步：把节点均匀排成一个圆 ==========
-        double centerX = width / 2.0;   // 画布中心x坐标
-        double centerY = height / 2.0;  // 画布中心y坐标
-        double radius = Math.min(width, height) * radiusScale;  // 圆的半径
+        for (int iter = 0; iter < 800; iter++) {
+            // 斥力
+            for (int i = 0; i < graph.nodeCount; i++) {
+                for (int j = i + 1; j < graph.nodeCount; j++) {
+                    double dx = graph.nodes[i].x - graph.nodes[j].x;
+                    double dy = graph.nodes[i].y - graph.nodes[j].y;
+                    double dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 1) dist = 1;
+                    double force = repulsion / (dist * dist);
+                    double fx = force * (dx / dist), fy = force * (dy / dist);
+                    graph.nodes[i].vx += fx; graph.nodes[i].vy += fy;
+                    graph.nodes[j].vx -= fx; graph.nodes[j].vy -= fy;
+                }
+            }
 
-        for (int i = 0; i < n; i++) {
-            // 第i个节点在圆上的角度 = 360度 * i / 总人数
-            double angle = 2.0 * 3.14159265 * i / n;
+            // 引力
+            for (int i = 0; i < graph.edgeCount; i++) {
+                int from = graph.edges[i].from, to = graph.edges[i].to;
+                double dx = graph.nodes[to].x - graph.nodes[from].x;
+                double dy = graph.nodes[to].y - graph.nodes[from].y;
+                double dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 1) dist = 1;
+                double force = dist * attraction;
+                double fx = force * (dx / dist), fy = force * (dy / dist);
+                graph.nodes[from].vx += fx; graph.nodes[from].vy += fy;
+                graph.nodes[to].vx -= fx; graph.nodes[to].vy -= fy;
+            }
 
-            // 用三角函数算出圆上的坐标
-            // cos算x方向，sin算y方向
-            graph.nodes[i].x = centerX + radius * Math.cos(angle);
-            graph.nodes[i].y = centerY + radius * Math.sin(angle);
-        }
+            // 更新位置
+            double cx = width / 2.0, cy = height / 2.0;
+            for (int i = 0; i < graph.nodeCount; i++) {
+                graph.nodes[i].vx += (cx - graph.nodes[i].x) * centerGravity;
+                graph.nodes[i].vy += (cy - graph.nodes[i].y) * centerGravity;
+                double speed = Math.sqrt(graph.nodes[i].vx * graph.nodes[i].vx +
+                                        graph.nodes[i].vy * graph.nodes[i].vy);
+                if (speed > maxSpeed) {
+                    graph.nodes[i].vx = (graph.nodes[i].vx / speed) * maxSpeed;
+                    graph.nodes[i].vy = (graph.nodes[i].vy / speed) * maxSpeed;
+                }
+                graph.nodes[i].vx *= temperature / 100;
+                graph.nodes[i].vy *= temperature / 100;
+                graph.nodes[i].x += graph.nodes[i].vx;
+                graph.nodes[i].y += graph.nodes[i].vy;
+                graph.nodes[i].vx = 0; graph.nodes[i].vy = 0;
+                graph.nodes[i].x = Math.max(30, Math.min(width - 30, graph.nodes[i].x));
+                graph.nodes[i].y = Math.max(30, Math.min(height - 30, graph.nodes[i].y));
+            }
 
-        // ========== 第二步：反复检查，推开重叠的节点 ==========
-        for (int round = 0; round < pushRounds; round++) {
-
-            // 标记这一轮有没有推开过节点
-            boolean pushed = false;
-
-            // 两两检查：节点i和节点j
-            for (int i = 0; i < n; i++) {
-                for (int j = i + 1; j < n; j++) {
-                    // 算两个节点的距离
+            // 防重叠
+            for (int i = 0; i < graph.nodeCount; i++) {
+                for (int j = i + 1; j < graph.nodeCount; j++) {
                     double dx = graph.nodes[j].x - graph.nodes[i].x;
                     double dy = graph.nodes[j].y - graph.nodes[i].y;
                     double dist = Math.sqrt(dx * dx + dy * dy);
-
-                    // 如果距离小于minGap，说明快重叠了
-                    if (dist < minGap) {
-                        // 需要推开多远：一人一半
-                        double push = (minGap - dist) / 2.0 + 1;
-
-                        // 沿着两个节点的连线方向推开
-                        // dx/dist 和 dy/dist 就是方向（归一化）
-                        if (dist > 0.01) {
-                            graph.nodes[i].x -= push * dx / dist;
-                            graph.nodes[i].y -= push * dy / dist;
-                            graph.nodes[j].x += push * dx / dist;
-                            graph.nodes[j].y += push * dy / dist;
-                        } else {
-                            // 两个节点完全重合了，随机推开
-                            graph.nodes[i].x -= push;
-                            graph.nodes[j].x += push;
-                        }
-
-                        pushed = true;
+                    if (dist < minDistance && dist > 0.1) {
+                        double push = (minDistance - dist) / 2;
+                        double px = push * (dx / dist), py = push * (dy / dist);
+                        graph.nodes[i].x -= px; graph.nodes[i].y -= py;
+                        graph.nodes[j].x += px; graph.nodes[j].y += py;
                     }
                 }
             }
 
-            // 如果这一轮没有推开任何节点，说明全部都不重叠了，提前结束
-            if (!pushed) {
-                break;
-            }
+            temperature *= 0.995;
+            if (temperature < 0.1) break;
         }
+    }
 
-        // ========== 第三步：确保所有节点在画布范围内 ==========
+    private void circularInit(SocialGraph graph, int width, int height) {
+        double cx = width / 2.0, cy = height / 2.0;
+        int n = graph.nodeCount;
+        if (n == 0) return;
+        double radius = Math.min(width, height) * 0.35;
         for (int i = 0; i < n; i++) {
-            if (graph.nodes[i].x < 30)            graph.nodes[i].x = 30;
-            if (graph.nodes[i].x > width - 30)     graph.nodes[i].x = width - 30;
-            if (graph.nodes[i].y < 30)            graph.nodes[i].y = 30;
-            if (graph.nodes[i].y > height - 30)    graph.nodes[i].y = height - 30;
+            double angle = 2 * Math.PI * i / n;
+            graph.nodes[i].x = cx + radius * Math.cos(angle);
+            graph.nodes[i].y = cy + radius * Math.sin(angle);
+            graph.nodes[i].vx = 0; graph.nodes[i].vy = 0;
         }
     }
 }

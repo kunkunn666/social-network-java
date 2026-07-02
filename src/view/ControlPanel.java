@@ -243,6 +243,8 @@ public class ControlPanel extends JPanel {
         return border;
     }
 
+    private static final String DATA_DIR = "D:/prg/VsCode/Java/social-network-java/data";
+
     private void loadDataset() {
         int idx = datasetCombo.getSelectedIndex();
         String filename = "";
@@ -250,11 +252,11 @@ public class ControlPanel extends JPanel {
         String desc = "";
 
         if (idx == 0) {
-            filename = "data/karate_club.csv";
+            filename = DATA_DIR + "/karate_club.csv";
             name = "空手道俱乐部";
             desc = "Zachary空手道俱乐部社交网络";
         } else if (idx == 1) {
-            filename = "data/stackoverflow_edges.csv";
+            filename = DATA_DIR + "/stackoverflow_edges.csv";
             name = "StackOverflow标签";
             desc = "StackOverflow技术标签共现网络";
         }
@@ -270,7 +272,7 @@ public class ControlPanel extends JPanel {
 
     private void chooseFile() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setCurrentDirectory(new File("data"));
+        chooser.setCurrentDirectory(new File(DATA_DIR));
         int result = chooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
