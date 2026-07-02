@@ -9,7 +9,6 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
 
 public class ControlPanel extends JScrollPane {
 
@@ -86,11 +85,7 @@ public class ControlPanel extends JScrollPane {
         topPanel.add(datasetCombo, BorderLayout.CENTER);
         topPanel.add(loadButton, BorderLayout.EAST);
 
-        JButton fileButton = new JButton("选择文件...");
-        fileButton.addActionListener(e -> chooseFile());
-
-        panel.add(topPanel, BorderLayout.NORTH);
-        panel.add(fileButton, BorderLayout.SOUTH);
+        panel.add(topPanel, BorderLayout.CENTER);
         return panel;
     }
 
@@ -431,29 +426,23 @@ public class ControlPanel extends JScrollPane {
 
     private void loadDataset(int idx) {
         String filename, name, desc;
+        boolean showNames, showId;
         if (idx == 0) {
             filename = DATA_DIR + "/karate_club.csv";
             name = "空手道俱乐部";
             desc = "Zachary空手道俱乐部社交网络";
+            showNames = false; showId = true;
         } else {
             filename = DATA_DIR + "/stackoverflow_edges.csv";
             name = "StackOverflow标签";
             desc = "StackOverflow技术标签共现网络";
+            showNames = true; showId = false;
         }
         SocialGraph g = new SocialGraph(name, desc);
         g.loadFromCSV(filename);
+        graphPanel.setShowNodeNames(showNames);
+        graphPanel.setShowNodeId(showId);
         mainFrame.setGraph(g);
-    }
-
-    private void chooseFile() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setCurrentDirectory(new File(DATA_DIR));
-        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File file = chooser.getSelectedFile();
-            SocialGraph g = new SocialGraph(file.getName(), "自定义数据集");
-            g.loadFromCSV(file.getAbsolutePath());
-            mainFrame.setGraph(g);
-        }
     }
 
     private void updateStats() {

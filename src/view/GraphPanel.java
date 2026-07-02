@@ -19,6 +19,8 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     private int hoverNodeId;
     private boolean showLabels;
     private boolean showWeights;
+    private boolean showNodeNames;
+    private boolean showNodeId;
     private int colorMode;
     private double scale;
     private double offsetX;
@@ -46,6 +48,8 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         this.hoverNodeId = -1;
         this.showLabels = true;
         this.showWeights = false;
+        this.showNodeNames = false;
+        this.showNodeId = true;
         this.colorMode = 0;
         this.scale = 1.0;
         this.offsetX = 0;
@@ -89,6 +93,16 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
 
     public void setShowWeights(boolean show) {
         this.showWeights = show;
+        repaint();
+    }
+
+    public void setShowNodeNames(boolean show) {
+        this.showNodeNames = show;
+        repaint();
+    }
+
+    public void setShowNodeId(boolean show) {
+        this.showNodeId = show;
         repaint();
     }
 
@@ -144,10 +158,10 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     }
 
     private double getNodeRadius(int nodeId) {
-        if (graph == null) return 8;
+        if (graph == null) return 12;
         Node n = graph.nodes[nodeId];
-        int base = 10;
-        int extra = Math.min(n.degree * 2, 20);
+        int base = 12;
+        int extra = Math.min(n.degree, 16);
         return base + extra;
     }
 
@@ -243,11 +257,13 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     }
 
     private void drawNodes(Graphics2D g2d) {
+        Font labelFont = new Font("微软雅黑", Font.PLAIN, 10);
         for (int i = 0; i < graph.nodeCount; i++) {
             Node n = graph.nodes[i];
             double r = getNodeRadius(i);
             Color color = getNodeColor(i);
 
+            // 绘制节点圆形
             g2d.setColor(color);
             g2d.fillOval((int) (n.x - r), (int) (n.y - r), (int) (r * 2), (int) (r * 2));
 
@@ -256,14 +272,36 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
             g2d.drawOval((int) (n.x - r), (int) (n.y - r), (int) (r * 2), (int) (r * 2));
             g2d.setStroke(new BasicStroke(1.0f));
 
-            if (showLabels) {
-                g2d.setColor(Color.BLACK);
-                g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+            // 节点ID显示在圆心
+            if (showNodeId) {
+                g2d.setColor(Color.WHITE);
+                g2d.setFont(new Font("微软雅黑", Font.BOLD, 10));
+                FontMetrics fmId = g2d.getFontMetrics();
+                String idStr = String.valueOf(n.id);
+                int idW = fmId.stringWidth(idStr);
+                g2d.drawString(idStr, (int) (n.x - idW / 2), (int) (n.y + 4));
+            }
+
+            // 标签显示在节点下方，带半透明背景
+            if (showLabels && showNodeNames) {
+                g2d.setFont(labelFont);
                 FontMetrics fm = g2d.getFontMetrics();
                 String name = n.name;
-                if (name.length() > 12) name = name.substring(0, 10) + "..";
+                if (name.length() > 16) name = name.substring(0, 14) + "..";
                 int tw = fm.stringWidth(name);
-                g2d.drawString(name, (int) (n.x - tw / 2), (int) (n.y + r + 13));
+                int th = fm.getHeight();
+                int lx = (int) (n.x - tw / 2) - 3;
+                int ly = (int) (n.y + r + 2);
+
+                // 半透明白色背景
+                g2d.setColor(new Color(255, 255, 255, 200));
+                g2d.fillRoundRect(lx, ly, tw + 6, th + 2, 4, 4);
+                g2d.setColor(new Color(180, 180, 180));
+                g2d.drawRoundRect(lx, ly, tw + 6, th + 2, 4, 4);
+
+                // 文字
+                g2d.setColor(new Color(40, 40, 40));
+                g2d.drawString(name, lx + 3, ly + fm.getAscent() + 1);
             }
         }
     }

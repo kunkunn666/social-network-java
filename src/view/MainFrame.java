@@ -197,6 +197,9 @@ public class MainFrame extends JFrame {
         try {
             SocialGraph g = new SocialGraph(name, path);
             g.loadFromCSV(path);
+            boolean isStackoverflow = name.toLowerCase().contains("stackoverflow");
+            graphPanel.setShowNodeNames(isStackoverflow);
+            graphPanel.setShowNodeId(!isStackoverflow);
             setGraph(g);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "加载失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);

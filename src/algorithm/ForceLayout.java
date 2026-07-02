@@ -3,17 +3,17 @@ package algorithm;
 import model.SocialGraph;
 
 public class ForceLayout {
-    private double repulsion = 5000;
-    private double attraction = 0.005;
-    private double centerGravity = 0.01;
-    private double maxSpeed = 8;
-    private double minDistance = 45;
+    private double repulsion = 10000;
+    private double attraction = 0.003;
+    private double centerGravity = 0.008;
+    private double maxSpeed = 10;
+    private double minDistance = 70;
 
     public void computeLayout(SocialGraph graph, int width, int height) {
         circularInit(graph, width, height);
-        double temperature = 100;
+        double temperature = 120;
 
-        for (int iter = 0; iter < 800; iter++) {
+        for (int iter = 0; iter < 1000; iter++) {
             // 斥力
             for (int i = 0; i < graph.nodeCount; i++) {
                 for (int j = i + 1; j < graph.nodeCount; j++) {
@@ -22,6 +22,8 @@ public class ForceLayout {
                     double dist = Math.sqrt(dx * dx + dy * dy);
                     if (dist < 1) dist = 1;
                     double force = repulsion / (dist * dist);
+                    // 距离越近斥力越大，指数级增长
+                    if (dist < minDistance) force *= (minDistance / dist) * 2;
                     double fx = force * (dx / dist), fy = force * (dy / dist);
                     graph.nodes[i].vx += fx; graph.nodes[i].vy += fy;
                     graph.nodes[j].vx -= fx; graph.nodes[j].vy -= fy;
@@ -52,32 +54,56 @@ public class ForceLayout {
                     graph.nodes[i].vx = (graph.nodes[i].vx / speed) * maxSpeed;
                     graph.nodes[i].vy = (graph.nodes[i].vy / speed) * maxSpeed;
                 }
-                graph.nodes[i].vx *= temperature / 100;
-                graph.nodes[i].vy *= temperature / 100;
+                graph.nodes[i].vx *= temperature / 120;
+                graph.nodes[i].vy *= temperature / 120;
                 graph.nodes[i].x += graph.nodes[i].vx;
                 graph.nodes[i].y += graph.nodes[i].vy;
                 graph.nodes[i].vx = 0; graph.nodes[i].vy = 0;
-                graph.nodes[i].x = Math.max(30, Math.min(width - 30, graph.nodes[i].x));
-                graph.nodes[i].y = Math.max(30, Math.min(height - 30, graph.nodes[i].y));
+                graph.nodes[i].x = Math.max(40, Math.min(width - 40, graph.nodes[i].x));
+                graph.nodes[i].y = Math.max(40, Math.min(height - 40, graph.nodes[i].y));
             }
 
             // 防重叠
+            resolveOverlaps(graph);
+
+            temperature *= 0.997;
+            if (temperature < 0.5) break;
+        }
+
+        // 最终强力防重叠：纯分离迭代
+        for (int iter = 0; iter < 80; iter++) {
+            boolean moved = false;
             for (int i = 0; i < graph.nodeCount; i++) {
                 for (int j = i + 1; j < graph.nodeCount; j++) {
                     double dx = graph.nodes[j].x - graph.nodes[i].x;
                     double dy = graph.nodes[j].y - graph.nodes[i].y;
                     double dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < minDistance && dist > 0.1) {
-                        double push = (minDistance - dist) / 2;
+                    if (dist < minDistance && dist > 0.01) {
+                        double push = (minDistance - dist) * 0.6;
                         double px = push * (dx / dist), py = push * (dy / dist);
                         graph.nodes[i].x -= px; graph.nodes[i].y -= py;
                         graph.nodes[j].x += px; graph.nodes[j].y += py;
+                        moved = true;
                     }
                 }
             }
+            if (!moved) break;
+        }
+    }
 
-            temperature *= 0.995;
-            if (temperature < 0.1) break;
+    private void resolveOverlaps(SocialGraph graph) {
+        for (int i = 0; i < graph.nodeCount; i++) {
+            for (int j = i + 1; j < graph.nodeCount; j++) {
+                double dx = graph.nodes[j].x - graph.nodes[i].x;
+                double dy = graph.nodes[j].y - graph.nodes[i].y;
+                double dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < minDistance && dist > 0.1) {
+                    double push = (minDistance - dist) * 0.55;
+                    double px = push * (dx / dist), py = push * (dy / dist);
+                    graph.nodes[i].x -= px; graph.nodes[i].y -= py;
+                    graph.nodes[j].x += px; graph.nodes[j].y += py;
+                }
+            }
         }
     }
 

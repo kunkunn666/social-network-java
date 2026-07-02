@@ -33,7 +33,12 @@ public class SocialGraph {
 
     public int addNode(String name) {
         if (nodeCount >= MAX_NODES) return -1;
-        nodes[nodeCount] = new Node(nodeCount, name);
+        try {
+            int id = Integer.parseInt(name);
+            nodes[nodeCount] = new Node(id, name);
+        } catch (NumberFormatException e) {
+            nodes[nodeCount] = new Node(nodeCount + 1, name);
+        }
         nodeCount++;
         return nodeCount - 1;
     }
@@ -153,7 +158,7 @@ public class SocialGraph {
                 String idStr = parts[0].trim();
                 int nodeId = -1;
                 for (int i = 0; i < nodeCount; i++) {
-                    if (nodes[i].name.equals(idStr) || String.valueOf(nodes[i].id + 1).equals(idStr)) {
+                    if (nodes[i].name.equals(idStr) || String.valueOf(nodes[i].id).equals(idStr)) {
                         nodeId = i; break;
                     }
                 }
