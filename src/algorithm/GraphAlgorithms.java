@@ -72,6 +72,45 @@ public class GraphAlgorithms {
         return path;
     }
 
+    public int[] dijkstraShortestPath(SocialGraph graph, int fromId, int toId) {
+        int n = graph.nodeCount;
+        if (fromId < 0 || toId < 0 || fromId >= n || toId >= n) return new int[0];
+
+        double[] dist = new double[n];
+        int[] prev = new int[n];
+        boolean[] visited = new boolean[n];
+        for (int i = 0; i < n; i++) { dist[i] = Double.MAX_VALUE; prev[i] = -1; }
+        dist[fromId] = 0;
+
+        for (int k = 0; k < n; k++) {
+            int u = -1;
+            double minDist = Double.MAX_VALUE;
+            for (int i = 0; i < n; i++) {
+                if (!visited[i] && dist[i] < minDist) { minDist = dist[i]; u = i; }
+            }
+            if (u == -1 || u == toId) break;
+            visited[u] = true;
+
+            for (int i = 0; i < graph.adjListSize[u]; i++) {
+                int v = graph.adjList[u][i];
+                double w = graph.adjMatrix[u][v];
+                if (w <= 0) w = 1.0;
+                if (!visited[v] && dist[u] + w < dist[v]) {
+                    dist[v] = dist[u] + w;
+                    prev[v] = u;
+                }
+            }
+        }
+
+        if (dist[toId] == Double.MAX_VALUE) return new int[0];
+        int pathLen = 0;
+        for (int cur = toId; cur != -1; cur = prev[cur]) pathLen++;
+        int[] path = new int[pathLen];
+        int cur = toId;
+        for (int i = pathLen - 1; i >= 0; i--) { path[i] = cur; cur = prev[cur]; }
+        return path;
+    }
+
     public double[] degreeCentrality(SocialGraph graph) {
         int n = graph.nodeCount;
         double[] centrality = new double[n];

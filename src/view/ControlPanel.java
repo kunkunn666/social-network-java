@@ -11,98 +11,370 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 
-public class ControlPanel extends JPanel {
+public class ControlPanel extends JScrollPane {
 
-    private SocialGraph graph;
-    private GraphPanel graphPanel;
-    private GraphAlgorithms algorithms;
-    private CommunityDetection communityDetection;
+    SocialGraph graph;
+    GraphPanel graphPanel;
+    MainFrame mainFrame;
+    GraphAlgorithms algorithms;
+    CommunityDetection communityDetection;
 
-    private JLabel statsLabel;
-    private JComboBox<String> datasetCombo;
-    private JComboBox<String> colorModeCombo;
-    private JCheckBox showLabelsCheck;
-    private JCheckBox showWeightsCheck;
-    private JTextField searchField;
-    private JTextArea infoArea;
+    JComboBox<String> colorModeCombo;
+    JCheckBox showLabelsCheck;
     JTextField fromNodeField;
     JTextField toNodeField;
     private JLabel pathResultLabel;
-    private JComboBox<String> algorithmCombo;
     private JLabel communityResultLabel;
+    private JLabel statsLabel;
+    private JTextArea infoArea;
+    private JTextArea degreeResultArea;
+    private JTextField nHopField;
+    private JTextField nHopNodeField;
 
-    public ControlPanel(SocialGraph graph, GraphPanel graphPanel) {
+    private static final String DATA_DIR = "D:/prg/VsCode/Java/social-network-java/data";
+
+    public ControlPanel(SocialGraph graph, GraphPanel graphPanel, MainFrame mainFrame) {
         this.graph = graph;
         this.graphPanel = graphPanel;
+        this.mainFrame = mainFrame;
         this.algorithms = new GraphAlgorithms();
         this.communityDetection = new CommunityDetection();
 
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        setPreferredSize(new Dimension(280, 600));
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        add(createDatasetPanel());
-        add(Box.createVerticalStrut(8));
-        add(createDisplayPanel());
-        add(Box.createVerticalStrut(8));
-        add(createSearchPanel());
-        add(Box.createVerticalStrut(8));
-        add(createPathPanel());
-        add(Box.createVerticalStrut(8));
-        add(createCommunityPanel());
-        add(Box.createVerticalStrut(8));
-        add(createStatsPanel());
-        add(Box.createVerticalStrut(8));
-        add(createInfoPanel());
-        add(Box.createVerticalGlue());
+        content.add(createDatasetPanel());
+        content.add(Box.createVerticalStrut(8));
+        content.add(createDegreePanel());
+        content.add(Box.createVerticalStrut(8));
+        content.add(createQueryPanel());
+        content.add(Box.createVerticalStrut(8));
+        content.add(createCommunityPanel());
+        content.add(Box.createVerticalStrut(8));
+        content.add(createDisplayPanel());
+        content.add(Box.createVerticalStrut(8));
+        content.add(createStatsPanel());
+        content.add(Box.createVerticalStrut(8));
+        content.add(createInfoPanel());
+        content.add(Box.createVerticalGlue());
+
+        setViewportView(content);
+        setPreferredSize(new Dimension(300, 600));
+        getVerticalScrollBar().setUnitIncrement(16);
     }
 
+    public void setGraph(SocialGraph newGraph) {
+        this.graph = newGraph;
+        updateStats();
+        pathResultLabel.setText(" ");
+        communityResultLabel.setText(" ");
+        infoArea.setText("");
+        degreeResultArea.setText("");
+    }
+
+    // ==================== 数据集切换区 ====================
     private JPanel createDatasetPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout(5, 5));
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(createTitledBorder("数据集"));
 
-        datasetCombo = new JComboBox<>(new String[]{"空手道俱乐部", "StackOverflow标签"});
-        datasetCombo.addActionListener(e -> loadDataset());
-
+        JComboBox<String> datasetCombo = new JComboBox<>(new String[]{"空手道俱乐部", "StackOverflow标签"});
         JButton loadButton = new JButton("加载");
-        loadButton.addActionListener(e -> loadDataset());
-
-        JButton fileButton = new JButton("选择文件...");
-        fileButton.addActionListener(e -> chooseFile());
+        loadButton.addActionListener(e -> loadDataset(datasetCombo.getSelectedIndex()));
 
         JPanel topPanel = new JPanel(new BorderLayout(5, 0));
         topPanel.add(datasetCombo, BorderLayout.CENTER);
         topPanel.add(loadButton, BorderLayout.EAST);
 
+        JButton fileButton = new JButton("选择文件...");
+        fileButton.addActionListener(e -> chooseFile());
+
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(fileButton, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    // ==================== 度分析模块 ====================
+    private JPanel createDegreePanel() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBorder(createTitledBorder("度分析模块"));
+
+        JButton calcBtn = new JButton("计算度数分类");
+        calcBtn.addActionListener(e -> calculateDegreeAnalysis());
+
+        degreeResultArea = new JTextArea(6, 20);
+        degreeResultArea.setEditable(false);
+        degreeResultArea.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        JScrollPane scroll = new JScrollPane(degreeResultArea);
+
+        panel.add(calcBtn, BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
+        return panel;
+    }
+
+    public void calculateDegreeAnalysis() {
+        if (graph == null || graph.nodeCount == 0) {
+            JOptionPane.showMessageDialog(this, "请先加载数据", "提示", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        graph.classifyNodes();
+        graphPanel.setColorMode(0);
+        colorModeCombo.setSelectedIndex(0);
+
+        StringBuilder sb = new StringBuilder();
+        StringBuilder core = new StringBuilder();
+        StringBuilder active = new StringBuilder();
+        StringBuilder edge = new StringBuilder();
+        int coreCount = 0, activeCount = 0, edgeCount = 0;
+
+        for (int i = 0; i < graph.nodeCount; i++) {
+            Node n = graph.nodes[i];
+            if ("核心".equals(n.type)) { core.append("  ").append(n.name).append("(").append(n.degree).append(")\n"); coreCount++; }
+            else if ("活跃".equals(n.type)) { active.append("  ").append(n.name).append("(").append(n.degree).append(")\n"); activeCount++; }
+            else { edge.append("  ").append(n.name).append("(").append(n.degree).append(")\n"); edgeCount++; }
+        }
+
+        sb.append("【核心节点】(").append(coreCount).append("个)\n").append(core).append("\n");
+        sb.append("【活跃节点】(").append(activeCount).append("个)\n").append(active).append("\n");
+        sb.append("【边缘节点】(").append(edgeCount).append("个)\n").append(edge);
+        degreeResultArea.setText(sb.toString());
+        degreeResultArea.setCaretPosition(0);
+        graphPanel.repaint();
+        mainFrame.updateStatus("度等级分类完成: 核心" + coreCount + "个, 活跃" + activeCount + "个, 边缘" + edgeCount + "个");
+    }
+
+    // ==================== 查询功能模块 ====================
+    private JPanel createQueryPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(createTitledBorder("查询功能模块"));
+
+        // 最短路径
+        JPanel pathPanel = new JPanel(new GridBagLayout());
+        pathPanel.setBorder(BorderFactory.createTitledBorder("最短路径"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(2, 2, 2, 2);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
+        pathPanel.add(new JLabel("起点:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1;
+        fromNodeField = new JTextField(6);
+        pathPanel.add(fromNodeField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
+        pathPanel.add(new JLabel("终点:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1;
+        toNodeField = new JTextField(6);
+        pathPanel.add(toNodeField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        JPanel btnPanel = new JPanel(new GridLayout(1, 2, 3, 0));
+        JButton bfsBtn = new JButton("BFS");
+        bfsBtn.addActionListener(e -> calculateShortestPath());
+        JButton dijkstraBtn = new JButton("Dijkstra");
+        dijkstraBtn.addActionListener(e -> calculateDijkstraPath());
+        btnPanel.add(bfsBtn);
+        btnPanel.add(dijkstraBtn);
+        pathPanel.add(btnPanel, gbc);
+
+        gbc.gridy = 3;
+        pathResultLabel = new JLabel(" ");
+        pathResultLabel.setForeground(new Color(66, 133, 244));
+        pathPanel.add(pathResultLabel, gbc);
+
+        // N跳圈子
+        JPanel nHopPanel = new JPanel(new GridBagLayout());
+        nHopPanel.setBorder(BorderFactory.createTitledBorder("N跳交往圈子"));
+        gbc = new GridBagConstraints();
+        gbc.insets = new Insets(2, 2, 2, 2);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
+        nHopPanel.add(new JLabel("节点:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1;
+        nHopNodeField = new JTextField(6);
+        nHopPanel.add(nHopNodeField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
+        nHopPanel.add(new JLabel("N跳:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1;
+        nHopField = new JTextField("2", 6);
+        nHopPanel.add(nHopField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        JButton nHopBtn = new JButton("查询N跳圈子");
+        nHopBtn.addActionListener(e -> {
+            try { calculateNHop(nHopNodeField.getText().trim(), Integer.parseInt(nHopField.getText().trim())); }
+            catch (NumberFormatException ex) { JOptionPane.showMessageDialog(this, "请输入有效跳数", "错误", JOptionPane.ERROR_MESSAGE); }
+        });
+        nHopPanel.add(nHopBtn, gbc);
+
+        // 附近地理用户
+        JPanel nearbyPanel = new JPanel(new BorderLayout(3, 0));
+        nearbyPanel.setBorder(BorderFactory.createTitledBorder("附近地理用户"));
+        JButton nearbyBtn = new JButton("检索附近用户");
+        nearbyBtn.addActionListener(e -> searchNearbyUsers());
+        nearbyPanel.add(nearbyBtn, BorderLayout.CENTER);
+
+        panel.add(pathPanel);
+        panel.add(nHopPanel);
+        panel.add(nearbyPanel);
+        return panel;
+    }
+
+    public void calculateShortestPath() {
+        if (graph == null || graph.nodeCount == 0) return;
+        String fromName = fromNodeField.getText().trim();
+        String toName = toNodeField.getText().trim();
+        int fromId = graph.findNodeId(fromName);
+        int toId = graph.findNodeId(toName);
+        if (fromId == -1) { JOptionPane.showMessageDialog(this, "未找到起点: " + fromName, "错误", JOptionPane.ERROR_MESSAGE); return; }
+        if (toId == -1) { JOptionPane.showMessageDialog(this, "未找到终点: " + toName, "错误", JOptionPane.ERROR_MESSAGE); return; }
+
+        int[] path = algorithms.shortestPath(graph, fromId, toId);
+        if (path.length == 0) {
+            pathResultLabel.setText("BFS: 两点不可达");
+            graphPanel.setHighlightedPath(new int[0]);
+        } else {
+            pathResultLabel.setText("BFS距离: " + (path.length - 1) + " 跳");
+            graphPanel.setHighlightedPath(path);
+        }
+        mainFrame.updateStatus("BFS最短路径: " + fromName + " → " + toName);
+    }
+
+    public void calculateDijkstraPath() {
+        if (graph == null || graph.nodeCount == 0) return;
+        String fromName = fromNodeField.getText().trim();
+        String toName = toNodeField.getText().trim();
+        int fromId = graph.findNodeId(fromName);
+        int toId = graph.findNodeId(toName);
+        if (fromId == -1) { JOptionPane.showMessageDialog(this, "未找到起点: " + fromName, "错误", JOptionPane.ERROR_MESSAGE); return; }
+        if (toId == -1) { JOptionPane.showMessageDialog(this, "未找到终点: " + toName, "错误", JOptionPane.ERROR_MESSAGE); return; }
+
+        int[] path = algorithms.dijkstraShortestPath(graph, fromId, toId);
+        if (path.length == 0) {
+            pathResultLabel.setText("Dijkstra: 两点不可达");
+            graphPanel.setHighlightedPath(new int[0]);
+        } else {
+            double dist = computePathWeight(path);
+            pathResultLabel.setText("Dijkstra距离: " + String.format("%.1f", dist));
+            graphPanel.setHighlightedPath(path);
+        }
+        mainFrame.updateStatus("Dijkstra最短路径: " + fromName + " → " + toName);
+    }
+
+    private double computePathWeight(int[] path) {
+        double total = 0;
+        for (int i = 0; i < path.length - 1; i++) {
+            double w = graph.adjMatrix[path[i]][path[i + 1]];
+            total += (w > 0) ? w : 1.0;
+        }
+        return total;
+    }
+
+    public void calculateNHop(String nodeName, int n) {
+        if (graph == null || graph.nodeCount == 0) return;
+        int nodeId = graph.findNodeId(nodeName);
+        if (nodeId == -1) { JOptionPane.showMessageDialog(this, "未找到节点: " + nodeName, "错误", JOptionPane.ERROR_MESSAGE); return; }
+
+        int[] dist = algorithms.bfsShortestPath(graph, nodeId);
+        java.util.ArrayList<Integer> circle = new java.util.ArrayList<>();
+        for (int i = 0; i < graph.nodeCount; i++) {
+            if (dist[i] > 0 && dist[i] <= n) circle.add(i);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(nodeName).append(" 的").append(n).append("跳圈子:\n");
+        sb.append("共 ").append(circle.size()).append(" 个节点\n");
+        for (int i = 0; i < Math.min(circle.size(), 20); i++) {
+            int id = circle.get(i);
+            sb.append("  ").append(graph.nodes[id].name).append(" (距离").append(dist[id]).append(")\n");
+        }
+        if (circle.size() > 20) sb.append("  ... 共").append(circle.size()).append("个节点");
+
+        int[] pathArr = new int[circle.size() + 1];
+        pathArr[0] = nodeId;
+        for (int i = 0; i < circle.size(); i++) pathArr[i + 1] = circle.get(i);
+        graphPanel.setHighlightedPath(pathArr);
+
+        JTextArea textArea = new JTextArea(sb.toString());
+        textArea.setEditable(false);
+        textArea.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        JScrollPane scroll = new JScrollPane(textArea);
+        scroll.setPreferredSize(new Dimension(350, 300));
+        JOptionPane.showMessageDialog(this, scroll, "N跳交往圈子", JOptionPane.INFORMATION_MESSAGE);
+        mainFrame.updateStatus(nodeName + " 的" + n + "跳圈子: " + circle.size() + "个节点");
+    }
+
+    public void searchNearbyUsers() {
+        if (graph == null || graph.nodeCount == 0) {
+            JOptionPane.showMessageDialog(this, "请先加载数据", "提示", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        JOptionPane.showMessageDialog(this,
+            "附近地理用户检索需要节点包含地理位置信息。\n当前数据集未包含地理坐标数据。\n\n建议: 使用包含经纬度信息的CSV数据集。",
+            "附近地理用户检索", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    // ==================== 社区发现模块 ====================
+    private JPanel createCommunityPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(createTitledBorder("社区发现模块"));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(2, 2, 2, 2);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 1;
+        gbc.gridwidth = 2;
+
+        JComboBox<String> algorithmCombo = new JComboBox<>(new String[]{"模块度优化算法", "标签传播算法"});
+        panel.add(algorithmCombo, gbc);
+
+        gbc.gridy = 1;
+        JButton detectBtn = new JButton("启动GN算法检测社区");
+        detectBtn.addActionListener(e -> detectCommunities(algorithmCombo.getSelectedIndex()));
+        panel.add(detectBtn, gbc);
+
+        gbc.gridy = 2;
+        communityResultLabel = new JLabel(" ");
+        communityResultLabel.setForeground(new Color(66, 133, 244));
+        panel.add(communityResultLabel, gbc);
 
         return panel;
     }
 
+    public void detectCommunities() { detectCommunities(0); }
+
+    private void detectCommunities(int algoIdx) {
+        if (graph == null || graph.nodeCount == 0) return;
+        int count = (algoIdx == 0) ? communityDetection.detectCommunities(graph)
+                                   : communityDetection.detectCommunitiesByLabelPropagation(graph);
+        double modularity = communityDetection.calculateModularity(graph);
+        communityResultLabel.setText("共" + count + "个社区, Q=" + String.format("%.3f", modularity));
+        graphPanel.setCommunityCount(count);
+        colorModeCombo.setSelectedIndex(1);
+        graphPanel.setColorMode(1);
+        mainFrame.updateStatus("社区检测完成: " + count + "个社区, 模块度Q=" + String.format("%.3f", modularity));
+    }
+
+    // ==================== 显示设置面板 ====================
     private JPanel createDisplayPanel() {
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(0, 1, 5, 5));
+        panel.setLayout(new GridLayout(0, 1, 3, 3));
         panel.setBorder(createTitledBorder("显示设置"));
 
         colorModeCombo = new JComboBox<>(new String[]{"按节点类型", "按社区", "统一颜色"});
-        colorModeCombo.addActionListener(e -> {
-            graphPanel.setColorMode(colorModeCombo.getSelectedIndex());
-        });
+        colorModeCombo.addActionListener(e -> graphPanel.setColorMode(colorModeCombo.getSelectedIndex()));
 
         showLabelsCheck = new JCheckBox("显示节点标签", true);
-        showLabelsCheck.addActionListener(e -> {
-            graphPanel.setShowLabels(showLabelsCheck.isSelected());
-        });
+        showLabelsCheck.addActionListener(e -> graphPanel.setShowLabels(showLabelsCheck.isSelected()));
 
-        showWeightsCheck = new JCheckBox("显示边权重", false);
-        showWeightsCheck.addActionListener(e -> {
-            graphPanel.setShowWeights(showWeightsCheck.isSelected());
-        });
+        JCheckBox showWeightsCheck = new JCheckBox("显示边权重", false);
+        showWeightsCheck.addActionListener(e -> graphPanel.setShowWeights(showWeightsCheck.isSelected()));
 
         JButton layoutButton = new JButton("重新布局");
-        layoutButton.addActionListener(e -> graphPanel.relayout());
+        layoutButton.addActionListener(e -> { graphPanel.relayout(); mainFrame.updateStatus("力导向布局已重置"); });
 
         JPanel zoomPanel = new JPanel(new GridLayout(1, 3, 3, 0));
         JButton zoomInBtn = new JButton("放大");
@@ -121,241 +393,82 @@ public class ControlPanel extends JPanel {
         panel.add(showWeightsCheck);
         panel.add(layoutButton);
         panel.add(zoomPanel);
-
         return panel;
     }
 
-    private JPanel createSearchPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout(5, 5));
-        panel.setBorder(createTitledBorder("节点搜索"));
-
-        searchField = new JTextField();
-        searchField.addActionListener(e -> searchNode());
-
-        JButton searchBtn = new JButton("搜索");
-        searchBtn.addActionListener(e -> searchNode());
-
-        panel.add(searchField, BorderLayout.CENTER);
-        panel.add(searchBtn, BorderLayout.EAST);
-
-        return panel;
-    }
-
-    private JPanel createPathPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridBagLayout());
-        panel.setBorder(createTitledBorder("最短路径"));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(2, 2, 2, 2);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        panel.add(new JLabel("起点:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1;
-        fromNodeField = new JTextField();
-        panel.add(fromNodeField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        panel.add(new JLabel("终点:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1;
-        toNodeField = new JTextField();
-        panel.add(toNodeField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2; gbc.weightx = 1;
-        JButton pathBtn = new JButton("计算最短路径");
-        pathBtn.addActionListener(e -> calculateShortestPath());
-        panel.add(pathBtn, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
-        pathResultLabel = new JLabel(" ");
-        pathResultLabel.setForeground(new Color(66, 133, 244));
-        panel.add(pathResultLabel, gbc);
-
-        return panel;
-    }
-
-    private JPanel createCommunityPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridBagLayout());
-        panel.setBorder(createTitledBorder("社区检测"));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(2, 2, 2, 2);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 1;
-        gbc.gridwidth = 2;
-
-        algorithmCombo = new JComboBox<>(new String[]{"模块度优化算法", "标签传播算法"});
-        panel.add(algorithmCombo, gbc);
-
-        gbc.gridy = 1;
-        JButton detectBtn = new JButton("检测社区");
-        detectBtn.addActionListener(e -> detectCommunities());
-        panel.add(detectBtn, gbc);
-
-        gbc.gridy = 2;
-        communityResultLabel = new JLabel(" ");
-        communityResultLabel.setForeground(new Color(66, 133, 244));
-        panel.add(communityResultLabel, gbc);
-
-        return panel;
-    }
-
+    // ==================== 统计信息 ====================
     private JPanel createStatsPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(createTitledBorder("统计信息"));
-
-        statsLabel = new JLabel("<html>节点: 0<br>边: 0<br>平均度: 0<br>密度: 0</html>");
+        statsLabel = new JLabel("<html>节点: 0<br>边: 0<br>平均度: 0<br>密度: 0<br>直径: 0</html>");
         statsLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         panel.add(statsLabel, BorderLayout.CENTER);
-
         return panel;
     }
 
+    // ==================== 节点详情 ====================
     private JPanel createInfoPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(createTitledBorder("节点详情"));
 
-        infoArea = new JTextArea(5, 20);
+        infoArea = new JTextArea(8, 20);
         infoArea.setEditable(false);
         infoArea.setLineWrap(true);
         infoArea.setWrapStyleWord(true);
         infoArea.setFont(new Font("微软雅黑", Font.PLAIN, 11));
         JScrollPane scroll = new JScrollPane(infoArea);
         panel.add(scroll, BorderLayout.CENTER);
-
         return panel;
     }
 
+    // ==================== 辅助方法 ====================
     private TitledBorder createTitledBorder(String title) {
-        TitledBorder border = BorderFactory.createTitledBorder(
+        return BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            title,
-            TitledBorder.LEFT,
-            TitledBorder.TOP,
-            new Font("微软雅黑", Font.BOLD, 12),
-            new Color(60, 60, 60)
-        );
-        return border;
+            title, TitledBorder.LEFT, TitledBorder.TOP,
+            new Font("微软雅黑", Font.BOLD, 12), new Color(60, 60, 60));
     }
 
-    private static final String DATA_DIR = "D:/prg/VsCode/Java/social-network-java/data";
-
-    private void loadDataset() {
-        int idx = datasetCombo.getSelectedIndex();
-        String filename = "";
-        String name = "";
-        String desc = "";
-
+    private void loadDataset(int idx) {
+        String filename, name, desc;
         if (idx == 0) {
             filename = DATA_DIR + "/karate_club.csv";
             name = "空手道俱乐部";
             desc = "Zachary空手道俱乐部社交网络";
-        } else if (idx == 1) {
+        } else {
             filename = DATA_DIR + "/stackoverflow_edges.csv";
             name = "StackOverflow标签";
             desc = "StackOverflow技术标签共现网络";
         }
-
-        graph = new SocialGraph(name, desc);
-        graph.loadFromCSV(filename);
-        graphPanel.setGraph(graph);
-        updateStats();
-        pathResultLabel.setText(" ");
-        communityResultLabel.setText(" ");
-        infoArea.setText("");
+        SocialGraph g = new SocialGraph(name, desc);
+        g.loadFromCSV(filename);
+        mainFrame.setGraph(g);
     }
 
     private void chooseFile() {
         JFileChooser chooser = new JFileChooser();
         chooser.setCurrentDirectory(new File(DATA_DIR));
-        int result = chooser.showOpenDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
-            graph = new SocialGraph(file.getName(), "自定义数据集");
-            graph.loadFromCSV(file.getAbsolutePath());
-            graphPanel.setGraph(graph);
-            updateStats();
-            pathResultLabel.setText(" ");
-            communityResultLabel.setText(" ");
-            infoArea.setText("");
+            SocialGraph g = new SocialGraph(file.getName(), "自定义数据集");
+            g.loadFromCSV(file.getAbsolutePath());
+            mainFrame.setGraph(g);
         }
     }
 
-    private void searchNode() {
-        String query = searchField.getText().trim();
-        if (query.isEmpty() || graph == null) return;
-
-        Node node = graph.getNodeByName(query);
-        if (node == null) {
-            for (int i = 0; i < graph.nodeCount; i++) {
-                if (graph.nodes[i].name.toLowerCase().contains(query.toLowerCase())) {
-                    node = graph.nodes[i];
-                    break;
-                }
-            }
-        }
-
-        if (node != null) {
-            showNodeInfo(node.id);
-        } else {
-            JOptionPane.showMessageDialog(this, "未找到节点: " + query, "提示", JOptionPane.INFORMATION_MESSAGE);
-        }
+    private void updateStats() {
+        if (graph == null) return;
+        double avgDeg = algorithms.averageDegree(graph);
+        double density = algorithms.graphDensity(graph);
+        statsLabel.setText(String.format(
+            "<html>节点数: %d<br>边数: %d<br>平均度: %.2f<br>图密度: %.4f<br>直径: %d</html>",
+            graph.nodeCount, graph.edgeCount, avgDeg, density, algorithms.diameter(graph)));
     }
 
-    public void calculateShortestPath() {
-        if (graph == null || graph.nodeCount == 0) return;
-
-        String fromName = fromNodeField.getText().trim();
-        String toName = toNodeField.getText().trim();
-
-        int fromId = graph.findNodeId(fromName);
-        int toId = graph.findNodeId(toName);
-
-        if (fromId == -1) {
-            JOptionPane.showMessageDialog(this, "未找到起点: " + fromName, "错误", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        if (toId == -1) {
-            JOptionPane.showMessageDialog(this, "未找到终点: " + toName, "错误", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        int[] path = algorithms.shortestPath(graph, fromId, toId);
-        if (path.length == 0) {
-            pathResultLabel.setText("两点不可达");
-            graphPanel.setHighlightedPath(new int[0]);
-        } else {
-            pathResultLabel.setText("距离: " + (path.length - 1) + " 跳");
-            graphPanel.setHighlightedPath(path);
-        }
-    }
-
-    public void detectCommunities() {
-        if (graph == null || graph.nodeCount == 0) return;
-
-        int count;
-        if (algorithmCombo.getSelectedIndex() == 0) {
-            count = communityDetection.detectCommunities(graph);
-        } else {
-            count = communityDetection.detectCommunitiesByLabelPropagation(graph);
-        }
-
-        double modularity = communityDetection.calculateModularity(graph);
-        communityResultLabel.setText("共" + count + "个社区, Q=" + String.format("%.3f", modularity));
-        graphPanel.setCommunityCount(count);
-        colorModeCombo.setSelectedIndex(1);
-        graphPanel.setColorMode(1);
-    }
-
-    private void showNodeInfo(int nodeId) {
-        if (nodeId < 0 || nodeId >= graph.nodeCount) return;
-        Node n = graph.nodes[nodeId];
-
+    public void updateSelectedNodeInfo() {
+        int selectedId = graphPanel.getSelectedNodeId();
+        if (selectedId < 0 || graph == null) return;
+        Node n = graph.nodes[selectedId];
         double[] dc = algorithms.degreeCentrality(graph);
         double[] cc = algorithms.closenessCentrality(graph);
 
@@ -364,40 +477,16 @@ public class ControlPanel extends JPanel {
         sb.append("ID: ").append(n.id).append("\n");
         sb.append("度数: ").append(n.degree).append("\n");
         sb.append("类型: ").append(n.type).append("\n");
-        sb.append(String.format("度中心性: %.4f\n", dc[nodeId]));
-        sb.append(String.format("接近中心性: %.4f\n", cc[nodeId]));
-        if (n.community >= 0) {
-            sb.append("社区: ").append(n.community + 1).append("\n");
-        }
+        sb.append(String.format("度中心性: %.4f\n", dc[selectedId]));
+        sb.append(String.format("接近中心性: %.4f\n", cc[selectedId]));
+        if (n.community >= 0) sb.append("社区: ").append(n.community + 1).append("\n");
         sb.append("\n邻居:\n");
-        int[] neighbors = graph.getNeighbors(nodeId);
+        int[] neighbors = graph.getNeighbors(selectedId);
         int showCount = Math.min(neighbors.length, 10);
-        for (int i = 0; i < showCount; i++) {
+        for (int i = 0; i < showCount; i++)
             sb.append("  - ").append(graph.nodes[neighbors[i]].name).append("\n");
-        }
-        if (neighbors.length > 10) {
-            sb.append("  ... 共").append(neighbors.length).append("个");
-        }
-
+        if (neighbors.length > 10) sb.append("  ... 共").append(neighbors.length).append("个");
         infoArea.setText(sb.toString());
-    }
-
-    private void updateStats() {
-        if (graph == null) return;
-        double avgDeg = algorithms.averageDegree(graph);
-        double density = algorithms.graphDensity(graph);
-
-        String html = String.format(
-            "<html>节点数: %d<br>边数: %d<br>平均度: %.2f<br>图密度: %.4f<br>直径: %d</html>",
-            graph.nodeCount, graph.edgeCount, avgDeg, density, algorithms.diameter(graph)
-        );
-        statsLabel.setText(html);
-    }
-
-    public void updateSelectedNodeInfo() {
-        int selectedId = graphPanel.getSelectedNodeId();
-        if (selectedId >= 0 && graph != null) {
-            showNodeInfo(selectedId);
-        }
+        mainFrame.updateStatus("选中节点: " + n.name + " (度数: " + n.degree + ", 类型: " + n.type + ")");
     }
 }

@@ -196,12 +196,23 @@ public class SocialGraph {
 
     public void classifyNodes() {
         if (nodeCount == 0) return;
-        int maxDegree = 0;
-        for (int i = 0; i < nodeCount; i++) {
-            if (nodes[i].degree > maxDegree) maxDegree = nodes[i].degree;
+
+        // 按度数排序，取阈值
+        int[] sortedDegrees = new int[nodeCount];
+        for (int i = 0; i < nodeCount; i++) sortedDegrees[i] = nodes[i].degree;
+        for (int i = 0; i < nodeCount - 1; i++) {
+            for (int j = 0; j < nodeCount - 1 - i; j++) {
+                if (sortedDegrees[j] < sortedDegrees[j + 1]) {
+                    int t = sortedDegrees[j]; sortedDegrees[j] = sortedDegrees[j + 1]; sortedDegrees[j + 1] = t;
+                }
+            }
         }
-        int coreT = (int) Math.ceil(maxDegree * 0.9);
-        int activeT = (int) Math.ceil(maxDegree * 0.67);
+        // 前20%为"核心"，20%~50%为"活跃"，后50%为"边缘"
+        int coreIdx = Math.max(0, (int) (nodeCount * 0.2) - 1);
+        int activeIdx = Math.max(0, (int) (nodeCount * 0.5) - 1);
+        int coreT = sortedDegrees[coreIdx];
+        int activeT = sortedDegrees[activeIdx];
+
         for (int i = 0; i < nodeCount; i++) {
             int d = nodes[i].degree;
             if (d >= coreT) nodes[i].type = "核心";

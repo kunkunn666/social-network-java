@@ -10,7 +10,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 
-public class GraphPanel extends JPanel implements MouseListener, MouseMotionListener, ComponentListener {
+public class GraphPanel extends JPanel implements MouseListener, MouseMotionListener, ComponentListener, MouseWheelListener {
 
     private SocialGraph graph;
     private ForceLayout layout;
@@ -26,6 +26,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     private int[] highlightedPath;
     private boolean dragMode;
     private int dragStartX, dragStartY;
+    private boolean dragLocked;
     private ArrayList<int[]> tempPath;
     private int communityCount;
 
@@ -51,6 +52,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         this.offsetY = 0;
         this.highlightedPath = new int[0];
         this.dragMode = false;
+        this.dragLocked = false;
         this.communityCount = 0;
         this.tempPath = new ArrayList<>();
 
@@ -58,6 +60,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         addMouseListener(this);
         addMouseMotionListener(this);
         addComponentListener(this);
+        addMouseWheelListener(this);
     }
 
     public void setGraph(SocialGraph graph) {
@@ -112,6 +115,10 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         highlightedPath = new int[0];
         graph.resetHighlights();
         repaint();
+    }
+
+    public void setDragLocked(boolean locked) {
+        this.dragLocked = locked;
     }
 
     private int screenToGraphX(int sx) {
@@ -304,8 +311,8 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     public void mousePressed(MouseEvent e) {
         int nodeId = findNodeAt(e.getX(), e.getY());
         if (nodeId >= 0) {
-            draggedNodeId = nodeId;
             selectedNodeId = nodeId;
+            if (!dragLocked) draggedNodeId = nodeId;
         } else {
             dragMode = true;
             dragStartX = e.getX();
@@ -360,6 +367,19 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
                 setToolTipText(null);
             }
         }
+    }
+
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        double oldScale = scale;
+        if (e.getWheelRotation() < 0) scale *= 1.1;
+        else scale /= 1.1;
+        if (scale < 0.1) scale = 0.1;
+        if (scale > 10) scale = 10;
+        double factor = scale / oldScale;
+        offsetX = e.getX() - factor * (e.getX() - offsetX);
+        offsetY = e.getY() - factor * (e.getY() - offsetY);
+        repaint();
     }
 
     @Override
