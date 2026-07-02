@@ -1,7 +1,6 @@
 package algorithm;
 
 import model.SocialGraph;
-import model.Node;
 
 public class CommunityDetection {
 
