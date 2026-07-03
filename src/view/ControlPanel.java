@@ -25,6 +25,7 @@ public class ControlPanel extends JScrollPane {
     private JCheckBox showLabelsCheck;
     private JLabel statsLabel;
     private JTextArea infoArea;
+    String currentFilePath;
 
     private static final String DATA_DIR = "D:/prg/VsCode/Java/social-network-java/data";
 
@@ -36,6 +37,7 @@ public class ControlPanel extends JScrollPane {
 
         queryPanel = new QueryPanel(mainFrame, graphPanel);
         analysisPanel = new AnalysisPanel(mainFrame, graphPanel);
+        analysisPanel.setControlPanel(this);
 
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
@@ -194,6 +196,7 @@ public class ControlPanel extends JScrollPane {
         }
         SocialGraph g = new SocialGraph(name, desc);
         g.loadFromCSV(filename);
+        currentFilePath = filename;
         graphPanel.setShowNodeNames(showNames);
         graphPanel.setShowNodeId(showId);
         mainFrame.setGraph(g);

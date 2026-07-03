@@ -311,6 +311,53 @@ public class SocialGraph {
         for (int i = 0; i < edgeCount; i++) edges[i].highlight = false;
     }
 
+    /** 删除指定节点及其所有相连边，重建邻接结构 */
+    public void removeNode(int nodeId) {
+        if (nodeId < 0 || nodeId >= nodeCount) return;
+
+        // 保存不被删除的节点
+        Node[] keptNodes = new Node[MAX_NODES];
+        int keptNodeCount = 0;
+        for (int i = 0; i < nodeCount; i++) {
+            if (i != nodeId) {
+                keptNodes[keptNodeCount] = nodes[i];
+                keptNodeCount++;
+            }
+        }
+
+        // 保存不被删除的边（不涉及 nodeId 的边），并重映射索引
+        Edge[] keptEdges = new Edge[MAX_EDGES];
+        int keptEdgeCount = 0;
+        for (int i = 0; i < edgeCount; i++) {
+            Edge e = edges[i];
+            if (e.from != nodeId && e.to != nodeId) {
+                int newFrom = e.from > nodeId ? e.from - 1 : e.from;
+                int newTo = e.to > nodeId ? e.to - 1 : e.to;
+                keptEdges[keptEdgeCount] = new Edge(newFrom, newTo, e.weight);
+                keptEdgeCount++;
+            }
+        }
+
+        // 清空并重建
+        clearData();
+        for (int i = 0; i < keptNodeCount; i++) {
+            nodes[i] = keptNodes[i];
+            nodes[i].degree = 0;
+        }
+        nodeCount = keptNodeCount;
+        for (int i = 0; i < keptEdgeCount; i++) {
+            Edge e = keptEdges[i];
+            edges[i] = e;
+            adjMatrix[e.from][e.to] = e.weight;
+            adjMatrix[e.to][e.from] = e.weight;
+            adjList[e.from][adjListSize[e.from]++] = e.to;
+            adjList[e.to][adjListSize[e.to]++] = e.from;
+            nodes[e.from].degree++;
+            nodes[e.to].degree++;
+        }
+        edgeCount = keptEdgeCount;
+    }
+
     public String getStats() {
         int core = 0, active = 0, edge = 0;
         for (int i = 0; i < nodeCount; i++) {
