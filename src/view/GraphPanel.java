@@ -96,7 +96,11 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     public void setShowWeights(boolean show) { this.showWeights = show; repaint(); }
     public void setShowNodeNames(boolean show) { this.showNodeNames = show; repaint(); }
     public void setShowNodeId(boolean show) { this.showNodeId = show; repaint(); }
-    public void setColorMode(int mode) { this.colorMode = mode; repaint(); }
+    public void setColorMode(int mode) { 
+    this.colorMode = mode; 
+    this.highlightedNodes = new HashSet<>();
+    repaint(); 
+}
     public void setCommunityCount(int count) { this.communityCount = count; }
 
     public void setHighlightedPath(int[] path) {
