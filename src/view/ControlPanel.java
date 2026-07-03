@@ -22,6 +22,7 @@ public class ControlPanel extends JScrollPane {
     JTextField fromNodeField;
     JTextField toNodeField;
     private JLabel pathResultLabel;
+    private JTextArea pathArea;
     private JLabel communityResultLabel;
     private JLabel statsLabel;
     private JTextArea infoArea;
@@ -177,6 +178,17 @@ public class ControlPanel extends JScrollPane {
         pathResultLabel.setForeground(new Color(66, 133, 244));
         pathPanel.add(pathResultLabel, gbc);
 
+        gbc.gridy = 4;
+        pathArea = new JTextArea(3, 10);
+        pathArea.setEditable(false);
+        pathArea.setLineWrap(true);
+        pathArea.setWrapStyleWord(true);
+        pathArea.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        pathArea.setBackground(new Color(248, 248, 248));
+        JScrollPane pathScroll = new JScrollPane(pathArea);
+        pathScroll.setPreferredSize(new Dimension(200, 50));
+        pathPanel.add(pathScroll, gbc);
+
         // N跳圈子
         JPanel nHopPanel = new JPanel(new GridBagLayout());
         nHopPanel.setBorder(BorderFactory.createTitledBorder("N跳交往圈子"));
@@ -229,9 +241,11 @@ public class ControlPanel extends JScrollPane {
         int[] path = algorithms.shortestPath(graph, fromId, toId);
         if (path.length == 0) {
             pathResultLabel.setText("BFS: 两点不可达");
+            pathArea.setText("");
             graphPanel.setHighlightedPath(new int[0]);
         } else {
             pathResultLabel.setText("BFS距离: " + (path.length - 1) + " 跳");
+            showPath(path);
             graphPanel.setHighlightedPath(path);
         }
         mainFrame.updateStatus("BFS最短路径: " + fromName + " → " + toName);
@@ -249,13 +263,24 @@ public class ControlPanel extends JScrollPane {
         int[] path = algorithms.dijkstraShortestPath(graph, fromId, toId);
         if (path.length == 0) {
             pathResultLabel.setText("Dijkstra: 两点不可达");
+            pathArea.setText("");
             graphPanel.setHighlightedPath(new int[0]);
         } else {
             double dist = computePathWeight(path);
             pathResultLabel.setText("Dijkstra距离: " + String.format("%.1f", dist));
+            showPath(path);
             graphPanel.setHighlightedPath(path);
         }
         mainFrame.updateStatus("Dijkstra最短路径: " + fromName + " → " + toName);
+    }
+
+    private void showPath(int[] path) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < path.length; i++) {
+            if (i > 0) sb.append(" → ");
+            sb.append(graph.nodes[path[i]].name);
+        }
+        pathArea.setText(sb.toString());
     }
 
     private double computePathWeight(int[] path) {
@@ -314,7 +339,7 @@ public class ControlPanel extends JScrollPane {
     // ==================== 社区发现模块 ====================
     private JPanel createCommunityPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(createTitledBorder("社区发现模块"));
+        panel.setBorder(createTitledBorder("连通分量检测"));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(2, 2, 2, 2);
@@ -322,15 +347,11 @@ public class ControlPanel extends JScrollPane {
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 1;
         gbc.gridwidth = 2;
 
-        JComboBox<String> algorithmCombo = new JComboBox<>(new String[]{"模块度优化算法", "标签传播算法"});
-        panel.add(algorithmCombo, gbc);
-
-        gbc.gridy = 1;
-        JButton detectBtn = new JButton("启动GN算法检测社区");
-        detectBtn.addActionListener(e -> detectCommunities(algorithmCombo.getSelectedIndex()));
+        JButton detectBtn = new JButton("检测连通分量");
+        detectBtn.addActionListener(e -> detectConnectedComponents());
         panel.add(detectBtn, gbc);
 
-        gbc.gridy = 2;
+        gbc.gridy = 1;
         communityResultLabel = new JLabel(" ");
         communityResultLabel.setForeground(new Color(66, 133, 244));
         panel.add(communityResultLabel, gbc);
@@ -338,18 +359,18 @@ public class ControlPanel extends JScrollPane {
         return panel;
     }
 
-    public void detectCommunities() { detectCommunities(0); }
+    public void detectCommunities() { detectConnectedComponents(); }
 
-    private void detectCommunities(int algoIdx) {
+    private void detectConnectedComponents() {
         if (graph == null || graph.nodeCount == 0) return;
-        int count = (algoIdx == 0) ? communityDetection.detectCommunities(graph)
-                                   : communityDetection.detectCommunitiesByLabelPropagation(graph);
-        double modularity = communityDetection.calculateModularity(graph);
-        communityResultLabel.setText("共" + count + "个社区, Q=" + String.format("%.3f", modularity));
+        int count = communityDetection.detectConnectedComponents(graph);
+        communityResultLabel.setText("共" + count + "个连通分量");
         graphPanel.setCommunityCount(count);
-        colorModeCombo.setSelectedIndex(1);
-        graphPanel.setColorMode(1);
-        mainFrame.updateStatus("社区检测完成: " + count + "个社区, 模块度Q=" + String.format("%.3f", modularity));
+        if (count > 1) {
+            colorModeCombo.setSelectedIndex(1);
+            graphPanel.setColorMode(1);
+        }
+        mainFrame.updateStatus("连通分量检测完成: " + count + "个连通分量");
     }
 
     // ==================== 显示设置面板 ====================
