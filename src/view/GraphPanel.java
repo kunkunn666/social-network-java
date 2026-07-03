@@ -168,7 +168,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     private Color getNodeColor(int nodeId) {
         if (graph == null) return Color.GRAY;
         Node n = graph.nodes[nodeId];
-        if (nodeId == selectedNodeId) return new Color(255, 87, 34);
+        if (nodeId == selectedNodeId) return new Color(156, 39, 176);
         if (nodeId == hoverNodeId) return new Color(255, 152, 0);
 
         if (colorMode == 0) {
@@ -217,7 +217,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
             Node n2 = graph.nodes[e.to];
 
             if (e.highlight) {
-                g2d.setColor(new Color(255, 87, 34));
+                g2d.setColor(new Color(156, 39, 176));
                 g2d.setStroke(new BasicStroke(3.0f));
             } else {
                 float alpha = 0.3f;
@@ -246,7 +246,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
 
     private void drawHighlightedPath(Graphics2D g2d) {
         if (highlightedPath.length < 2) return;
-        g2d.setColor(new Color(255, 87, 34));
+        g2d.setColor(new Color(156, 39, 176));
         g2d.setStroke(new BasicStroke(4.0f));
         for (int i = 0; i < highlightedPath.length - 1; i++) {
             Node n1 = graph.nodes[highlightedPath[i]];
