@@ -22,7 +22,6 @@ public class ControlPanel extends JScrollPane {
 
     private QueryPanel queryPanel;
     private AnalysisPanel analysisPanel;
-    private JCheckBox showLabelsCheck;
     private JLabel statsLabel;
     private JTextArea infoArea;
     String currentFilePath;
@@ -45,15 +44,15 @@ public class ControlPanel extends JScrollPane {
 
         content.add(createDatasetPanel());
         content.add(Box.createVerticalStrut(8));
+        content.add(createStatsPanel());
+        content.add(Box.createVerticalStrut(8));
+        content.add(createInfoPanel());
+        content.add(Box.createVerticalStrut(8));
         content.add(analysisPanel);
         content.add(Box.createVerticalStrut(8));
         content.add(queryPanel);
         content.add(Box.createVerticalStrut(8));
         content.add(createDisplayPanel());
-        content.add(Box.createVerticalStrut(8));
-        content.add(createStatsPanel());
-        content.add(Box.createVerticalStrut(8));
-        content.add(createInfoPanel());
         content.add(Box.createVerticalGlue());
 
         setViewportView(content);
@@ -90,39 +89,14 @@ public class ControlPanel extends JScrollPane {
     // ==================== 显示设置面板 ====================
 
     private JPanel createDisplayPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(0, 1, 3, 3));
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(createTitledBorder("显示设置"));
 
         analysisPanel.colorModeCombo = new JComboBox<>(new String[]{"按节点类型", "按社区", "统一颜色"});
         analysisPanel.colorModeCombo.addActionListener(e -> graphPanel.setColorMode(analysisPanel.colorModeCombo.getSelectedIndex()));
 
-        showLabelsCheck = new JCheckBox("显示节点标签", true);
-        showLabelsCheck.addActionListener(e -> graphPanel.setShowLabels(showLabelsCheck.isSelected()));
-
-        JCheckBox showWeightsCheck = new JCheckBox("显示边权重", false);
-        showWeightsCheck.addActionListener(e -> graphPanel.setShowWeights(showWeightsCheck.isSelected()));
-
-        JButton layoutButton = new JButton("重新布局");
-        layoutButton.addActionListener(e -> { graphPanel.relayout(); mainFrame.updateStatus("力导向布局已重置"); });
-
-        JPanel zoomPanel = new JPanel(new GridLayout(1, 3, 3, 0));
-        JButton zoomInBtn = new JButton("放大");
-        JButton zoomOutBtn = new JButton("缩小");
-        JButton resetBtn = new JButton("重置");
-        zoomInBtn.addActionListener(e -> graphPanel.zoomIn());
-        zoomOutBtn.addActionListener(e -> graphPanel.zoomOut());
-        resetBtn.addActionListener(e -> graphPanel.resetView());
-        zoomPanel.add(zoomInBtn);
-        zoomPanel.add(zoomOutBtn);
-        zoomPanel.add(resetBtn);
-
-        panel.add(new JLabel("着色方式:"));
-        panel.add(analysisPanel.colorModeCombo);
-        panel.add(showLabelsCheck);
-        panel.add(showWeightsCheck);
-        panel.add(layoutButton);
-        panel.add(zoomPanel);
+        panel.add(new JLabel("着色方式:"), BorderLayout.WEST);
+        panel.add(analysisPanel.colorModeCombo, BorderLayout.CENTER);
         return panel;
     }
 
