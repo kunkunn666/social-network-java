@@ -29,6 +29,7 @@ public class ControlPanel extends JScrollPane {
     private JTextArea degreeResultArea;
     private JTextField nHopField;
     private JTextField nHopNodeField;
+    private JTextArea nHopResultArea;
 
     private static final String DATA_DIR = "D:/prg/VsCode/Java/social-network-java/data";
 
@@ -70,6 +71,7 @@ public class ControlPanel extends JScrollPane {
         communityResultLabel.setText(" ");
         infoArea.setText("");
         degreeResultArea.setText("");
+        nHopResultArea.setText("");
     }
 
     // ==================== 数据集切换区 ====================
@@ -216,6 +218,17 @@ public class ControlPanel extends JScrollPane {
         });
         nHopPanel.add(nHopBtn, gbc);
 
+        gbc.gridy = 3; gbc.weighty = 1; gbc.fill = GridBagConstraints.BOTH;
+        nHopResultArea = new JTextArea(4, 10);
+        nHopResultArea.setEditable(false);
+        nHopResultArea.setLineWrap(true);
+        nHopResultArea.setWrapStyleWord(true);
+        nHopResultArea.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        nHopResultArea.setBackground(new Color(248, 248, 248));
+        JScrollPane nHopScroll = new JScrollPane(nHopResultArea);
+        nHopScroll.setPreferredSize(new Dimension(200, 80));
+        nHopPanel.add(nHopScroll, gbc);
+
         // 附近地理用户
         JPanel nearbyPanel = new JPanel(new BorderLayout(3, 0));
         nearbyPanel.setBorder(BorderFactory.createTitledBorder("附近地理用户"));
@@ -303,26 +316,33 @@ public class ControlPanel extends JScrollPane {
             if (dist[i] > 0 && dist[i] <= n) circle.add(i);
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(nodeName).append(" 的").append(n).append("跳圈子:\n");
-        sb.append("共 ").append(circle.size()).append(" 个节点\n");
-        for (int i = 0; i < Math.min(circle.size(), 20); i++) {
-            int id = circle.get(i);
-            sb.append("  ").append(graph.nodes[id].name).append(" (距离").append(dist[id]).append(")\n");
+        // 按跳数分组
+        java.util.ArrayList<java.util.ArrayList<String>> hopGroups = new java.util.ArrayList<>();
+        for (int d = 1; d <= n; d++) hopGroups.add(new java.util.ArrayList<>());
+        for (int i = 0; i < graph.nodeCount; i++) {
+            if (dist[i] > 0 && dist[i] <= n) {
+                hopGroups.get(dist[i] - 1).add(graph.nodes[i].name);
+            }
         }
-        if (circle.size() > 20) sb.append("  ... 共").append(circle.size()).append("个节点");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(nodeName).append(" 的").append(n).append("跳圈子 (共").append(circle.size()).append("节点)\n");
+        for (int d = 1; d <= n; d++) {
+            java.util.ArrayList<String> group = hopGroups.get(d - 1);
+            if (group.isEmpty()) continue;
+            sb.append("距离").append(d).append(": ");
+            for (int j = 0; j < group.size(); j++) {
+                if (j > 0) sb.append(", ");
+                sb.append(group.get(j));
+            }
+            sb.append("\n");
+        }
+        nHopResultArea.setText(sb.toString());
 
         int[] pathArr = new int[circle.size() + 1];
         pathArr[0] = nodeId;
         for (int i = 0; i < circle.size(); i++) pathArr[i + 1] = circle.get(i);
         graphPanel.setHighlightedPath(pathArr);
-
-        JTextArea textArea = new JTextArea(sb.toString());
-        textArea.setEditable(false);
-        textArea.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        JScrollPane scroll = new JScrollPane(textArea);
-        scroll.setPreferredSize(new Dimension(350, 300));
-        JOptionPane.showMessageDialog(this, scroll, "N跳交往圈子", JOptionPane.INFORMATION_MESSAGE);
         mainFrame.updateStatus(nodeName + " 的" + n + "跳圈子: " + circle.size() + "个节点");
     }
 
