@@ -6,7 +6,6 @@ package view;
  */
 
 import model.SocialGraph;
-import algorithm.GraphAlgorithms;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,11 +18,9 @@ public class MainFrame extends JFrame {
     ControlPanel controlPanel;
     private JLabel statusLabel;
     private JSplitPane splitPane;
-    private GraphAlgorithms algorithms;
 
     public MainFrame() {
         graph = new SocialGraph("空图", "尚未加载数据");
-        algorithms = new GraphAlgorithms();
 
         setTitle("社交网络可视化分析系统");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

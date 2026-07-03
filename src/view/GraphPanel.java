@@ -7,7 +7,6 @@ import algorithm.ForceLayout;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -40,7 +39,6 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     private boolean dragMode;
     private int dragStartX, dragStartY;
     private boolean dragLocked;
-    private ArrayList<int[]> tempPath;
 
     public GraphPanel(SocialGraph graph) {
         this.graph = graph;
@@ -61,7 +59,6 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         this.dragMode = false;
         this.dragLocked = false;
         this.communityCount = 0;
-        this.tempPath = new ArrayList<>();
 
         setBackground(new Color(245, 247, 250));
         addMouseListener(this);
