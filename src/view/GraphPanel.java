@@ -9,6 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
 
 public class GraphPanel extends JPanel implements MouseListener, MouseMotionListener, ComponentListener, MouseWheelListener {
 
@@ -26,6 +28,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     private double offsetX;
     private double offsetY;
     private int[] highlightedPath;
+    private Set<Integer> highlightedNodes;
     private boolean dragMode;
     private int dragStartX, dragStartY;
     private boolean dragLocked;
@@ -55,6 +58,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         this.offsetX = 0;
         this.offsetY = 0;
         this.highlightedPath = new int[0];
+        this.highlightedNodes = new HashSet<>();
         this.dragMode = false;
         this.dragLocked = false;
         this.communityCount = 0;
@@ -72,6 +76,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         this.selectedNodeId = -1;
         this.hoverNodeId = -1;
         this.highlightedPath = new int[0];
+        this.highlightedNodes = new HashSet<>();
         this.communityCount = 0;
         relayout();
     }
@@ -120,6 +125,11 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         repaint();
     }
 
+    public void setHighlightedNodes(Set<Integer> nodes) {
+        this.highlightedNodes = (nodes != null) ? nodes : new HashSet<>();
+        repaint();
+    }
+
     public int getSelectedNodeId() {
         return selectedNodeId;
     }
@@ -127,6 +137,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     public void clearSelection() {
         selectedNodeId = -1;
         highlightedPath = new int[0];
+        highlightedNodes = new HashSet<>();
         graph.resetHighlights();
         repaint();
     }
@@ -170,6 +181,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         Node n = graph.nodes[nodeId];
         if (nodeId == selectedNodeId) return new Color(156, 39, 176);
         if (nodeId == hoverNodeId) return new Color(255, 152, 0);
+        if (highlightedNodes.contains(nodeId)) return new Color(156, 39, 176);
 
         if (colorMode == 0) {
             if ("核心".equals(n.type)) return new Color(239, 83, 80);
@@ -216,7 +228,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
             Node n1 = graph.nodes[e.from];
             Node n2 = graph.nodes[e.to];
 
-            if (e.highlight) {
+            if (e.highlight || (highlightedNodes.contains(e.from) && highlightedNodes.contains(e.to))) {
                 g2d.setColor(new Color(156, 39, 176));
                 g2d.setStroke(new BasicStroke(3.0f));
             } else {
@@ -321,9 +333,9 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
 
         g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
         if (colorMode == 0) {
-            drawLegendItem(g2d, x, y, new Color(239, 83, 80), "核心节点"); y += 18;
-            drawLegendItem(g2d, x, y, new Color(255, 193, 7), "活跃节点"); y += 18;
-            drawLegendItem(g2d, x, y, new Color(129, 199, 132), "边缘节点");
+            drawLegendItem(g2d, x, y, new Color(239, 83, 80), "核心人物"); y += 18;
+            drawLegendItem(g2d, x, y, new Color(255, 193, 7), "活跃人物"); y += 18;
+            drawLegendItem(g2d, x, y, new Color(129, 199, 132), "边缘人物");
         } else if (colorMode == 1 && communityCount > 0) {
             for (int i = 0; i < Math.min(communityCount, 5); i++) {
                 drawLegendItem(g2d, x, y, COMMUNITY_COLORS[i % COMMUNITY_COLORS.length], "社区 " + (i + 1));

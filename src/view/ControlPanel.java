@@ -8,6 +8,8 @@ import algorithm.CommunityDetection;
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
+import java.util.Set;
+import java.util.HashSet;
 
 public class ControlPanel extends JScrollPane {
 
@@ -131,9 +133,9 @@ public class ControlPanel extends JScrollPane {
             else { edge.append("  ").append(n.name).append("(").append(n.degree).append(")\n"); edgeCount++; }
         }
 
-        sb.append("【核心节点】(").append(coreCount).append("个)\n").append(core).append("\n");
-        sb.append("【活跃节点】(").append(activeCount).append("个)\n").append(active).append("\n");
-        sb.append("【边缘节点】(").append(edgeCount).append("个)\n").append(edge);
+        sb.append("【核心人物】(").append(coreCount).append("个)\n").append(core).append("\n");
+        sb.append("【活跃人物】(").append(activeCount).append("个)\n").append(active).append("\n");
+        sb.append("【边缘人物】(").append(edgeCount).append("个)\n").append(edge);
         degreeResultArea.setText(sb.toString());
         degreeResultArea.setCaretPosition(0);
         graphPanel.repaint();
@@ -376,6 +378,11 @@ public class ControlPanel extends JScrollPane {
         communityResultLabel.setForeground(new Color(66, 133, 244));
         panel.add(communityResultLabel, gbc);
 
+        gbc.gridy = 2;
+        JButton findCircleBtn = new JButton("查找该节点的交往圈子");
+        findCircleBtn.addActionListener(e -> findNodeCircle());
+        panel.add(findCircleBtn, gbc);
+
         return panel;
     }
 
@@ -391,6 +398,27 @@ public class ControlPanel extends JScrollPane {
             graphPanel.setColorMode(1);
         }
         mainFrame.updateStatus("连通分量检测完成: " + count + "个连通分量");
+    }
+
+    private void findNodeCircle() {
+        int selectedId = graphPanel.getSelectedNodeId();
+        if (selectedId < 0) {
+            JOptionPane.showMessageDialog(this, "请先在图中点击选择一个节点", "提示", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        // 确保连通分量数据已计算
+        if (graph.nodes[selectedId].community < 0) {
+            communityDetection.detectConnectedComponents(graph);
+        }
+        int targetCommunity = graph.nodes[selectedId].community;
+        Set<Integer> circleNodes = new HashSet<>();
+        for (int i = 0; i < graph.nodeCount; i++) {
+            if (graph.nodes[i].community == targetCommunity) {
+                circleNodes.add(i);
+            }
+        }
+        graphPanel.setHighlightedNodes(circleNodes);
+        mainFrame.updateStatus("节点 " + graph.nodes[selectedId].name + " 的交往圈子: " + circleNodes.size() + "个节点");
     }
 
     // ==================== 显示设置面板 ====================
