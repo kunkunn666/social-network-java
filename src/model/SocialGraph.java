@@ -1,5 +1,11 @@
 package model;
 
+/**
+ * 社交网络图模型 — 核心数据层
+ * 加载CSV数据集，构建邻接矩阵和邻接表，按度百分位分类节点（核心/活跃/边缘），
+ * 提供节点查找、邻居查询、高亮重置等基础操作
+ */
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.File;

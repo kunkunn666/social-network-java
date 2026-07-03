@@ -1,5 +1,11 @@
 package algorithm;
 
+/**
+ * 图算法集 — 提供多种社交网络分析算法
+ * 包含：BFS无权最短路径、Dijkstra有权最短路径、度中心性、接近中心性、介数中心性、
+ * 图直径、平均路径长度、平均度、图密度、TopN度数节点
+ */
+
 import model.SocialGraph;
 import model.Node;
 

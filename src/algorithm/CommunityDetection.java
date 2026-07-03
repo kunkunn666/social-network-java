@@ -1,5 +1,10 @@
 package algorithm;
 
+/**
+ * 连通分量检测 — 用BFS遍历找出图中的所有连通分量
+ * 将每个节点标记所属连通分量编号，用数组存储结果
+ */
+
 import model.SocialGraph;
 
 public class CommunityDetection {

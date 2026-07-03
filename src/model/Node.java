@@ -1,5 +1,9 @@
 package model;
-//节点
+
+/**
+ * 节点模型 — 社交网络中的个体
+ * 包含节点ID、名称、度数、类型（核心/活跃/边缘）、所属社区编号、画布坐标
+ */
 public class Node {
     public int id;
     public String name;

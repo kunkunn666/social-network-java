@@ -1,5 +1,10 @@
 package algorithm;
 
+/**
+ * 力导向布局算法 — 计算节点在画布上的位置
+ * 通过模拟节点间斥力与边引力，迭代计算使布局均匀、无重叠
+ */
+
 import model.SocialGraph;
 
 public class ForceLayout {

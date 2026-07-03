@@ -1,5 +1,10 @@
 package view;
 
+/**
+ * 主窗口 — 应用顶层容器
+ * 组装左侧控制面板、右侧图可视化面板、底部状态栏，提供图数据加载和状态更新接口
+ */
+
 import model.SocialGraph;
 import algorithm.GraphAlgorithms;
 

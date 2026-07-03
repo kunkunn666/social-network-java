@@ -1,5 +1,9 @@
 package model;
-//地理坐标
+
+/**
+ * 地理位置模型 — 节点的经纬度坐标
+ * 用于附近地理用户检索等基于位置的功能
+ */
 public class GeoPosition {
     public double longitude, latitude;
 

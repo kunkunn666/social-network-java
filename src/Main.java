@@ -1,3 +1,7 @@
+/**
+ * 程序入口 — 社交网络可视化分析系统
+ * 设置系统外观，启动主窗口 MainFrame
+ */
 import view.MainFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;

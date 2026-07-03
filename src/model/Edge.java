@@ -1,5 +1,9 @@
 package model;
-//边
+
+/**
+ * 边模型 — 社交网络中两个节点之间的连接关系
+ * 包含起点、终点、权重、是否高亮
+ */
 public class Edge {
     public int from, to;
     public double weight;
