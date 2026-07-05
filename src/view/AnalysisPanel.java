@@ -152,7 +152,7 @@ public class AnalysisPanel extends JPanel {
             if ("核心".equals(currentNode.type)) {
                 // 核心人物：度数最高的节点
                 coreNodeList.append("  ").append(currentNode.name)
-                           .append("(").append(currentNode.degree).append(")\n");
+                            .append("(").append(currentNode.degree).append(")\n");
                 coreCount++;
             } else if ("活跃".equals(currentNode.type)) {
                 // 活跃人物：度数中等的节点
