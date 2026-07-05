@@ -157,12 +157,12 @@ public class AnalysisPanel extends JPanel {
             } else if ("活跃".equals(currentNode.type)) {
                 // 活跃人物：度数中等的节点
                 activeNodeList.append("  ").append(currentNode.name)
-                             .append("(").append(currentNode.degree).append(")\n");
+                            .append("(").append(currentNode.degree).append(")\n");
                 activeCount++;
             } else {
                 // 边缘人物：度数较低的节点
                 edgeNodeList.append("  ").append(currentNode.name)
-                           .append("(").append(currentNode.degree).append(")\n");
+                            .append("(").append(currentNode.degree).append(")\n");
                 edgeCount++;
             }
         }
