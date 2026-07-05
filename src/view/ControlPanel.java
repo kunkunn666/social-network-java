@@ -42,9 +42,6 @@ public class ControlPanel extends JScrollPane {
     /** 当前加载的数据文件路径（用于恢复原图） */
     String currentFilePath;
 
-    /** 数据文件存放目录 */
-    private static final String DATA_DIR = "D:/prg/VsCode/Java/social-network-java/data";
-
     /**
      * 构造函数：创建控制面板，组装所有子功能面板
      *
@@ -242,9 +239,9 @@ public class ControlPanel extends JScrollPane {
         infoBuilder.append(String.format("度中心性: %.4f\n", degreeCentralityValues[selectedId]));
         infoBuilder.append(String.format("接近中心性: %.4f\n", closenessCentralityValues[selectedId]));
 
-        // 如果节点有社区归属，显示社区编号
-        if (selectedNode.community >= 0) {
-            infoBuilder.append("社区: ").append(selectedNode.community + 1).append("\n");
+        // 如果节点有连通分量归属，显示分量编号
+        if (graph.vset[selectedId] >= 0) {
+            infoBuilder.append("分量: ").append(graph.vset[selectedId] + 1).append("\n");
         }
 
         // 显示邻居列表（最多显示10个）
@@ -289,14 +286,14 @@ public class ControlPanel extends JScrollPane {
 
         if (datasetIndex == 0) {
             // 空手道俱乐部数据集
-            filename = DATA_DIR + "/karate_club.csv";
+            filename = "D:/prg/VsCode/Java/social-network-java/data/karate_club.csv";
             name = "空手道俱乐部";
             desc = "Zachary空手道俱乐部社交网络";
             showNames = false;  // 节点名称较长，不显示
             showId = true;      // 显示ID数字
         } else {
             // StackOverflow标签数据集
-            filename = DATA_DIR + "/stackoverflow_edges.csv";
+            filename = "D:/prg/VsCode/Java/social-network-java/data/stackoverflow_edges.csv";
             name = "StackOverflow标签";
             desc = "StackOverflow技术标签共现网络";
             showNames = true;   // 显示标签名称

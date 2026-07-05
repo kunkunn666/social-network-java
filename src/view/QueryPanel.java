@@ -238,7 +238,7 @@ public class QueryPanel extends JPanel {
         }
 
         // 调用Dijkstra算法计算带权最短路径
-        int[] shortestPath = algorithms.dijkstraShortestPath(graph, fromNodeId, toNodeId);
+        int[] shortestPath = algorithms.Dijkstra(graph, fromNodeId, toNodeId);
 
         if (shortestPath.length == 0) {
             // 没有路径：两点不可达
@@ -391,7 +391,7 @@ public class QueryPanel extends JPanel {
         }
 
         // 步骤1：使用BFS计算从中心节点到所有节点的距离
-        int[] distanceFromCenter = algorithms.bfsShortestPath(graph, centerNodeId);
+        int[] distanceFromCenter = algorithms.BFS(graph, centerNodeId);
 
         // 步骤2：收集所有在N跳范围内的节点（距离>0且<=N）
         ArrayList<Integer> circleNodeIds = new ArrayList<>();

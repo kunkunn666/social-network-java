@@ -150,9 +150,9 @@ public class MainFrame extends JFrame {
         controlPanel.setGraph(newGraph);
 
         // 更新底部状态栏，显示加载结果
-        String statusText = "已加载: " + newGraph.datasetName
-                          + " (" + newGraph.nodeCount + "个节点, "
-                          + newGraph.edgeCount + "条边)";
+        String statusText = "已加载: " + newGraph.dataName
+                        + " (" + newGraph.nodeCount + "个节点, "
+                        + newGraph.edgeCount + "条边)";
         updateStatus(statusText);
     }
 

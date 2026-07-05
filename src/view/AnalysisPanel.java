@@ -24,7 +24,7 @@ public class AnalysisPanel extends JPanel {
     private GraphPanel graphPanel;
 
     /** 社区检测工具类 */
-    private CommunityDetection communityDetection;
+    private CommunityDetection componentDetection;
 
     /** 控制面板引用（用于获取当前文件路径，恢复原图） */
     private ControlPanel controlPanel;
@@ -35,7 +35,7 @@ public class AnalysisPanel extends JPanel {
     private JTextArea degreeResultArea;
 
     /** 连通分量检测结果标签 */
-    private JLabel communityResultLabel;
+    private JLabel componentResultLabel;
 
     /** 删除节点结果文本区域 */
     private JTextArea deleteResultArea;
@@ -55,7 +55,7 @@ public class AnalysisPanel extends JPanel {
     public AnalysisPanel(MainFrame mainFrame, GraphPanel graphPanel) {
         this.mainFrame = mainFrame;
         this.graphPanel = graphPanel;
-        this.communityDetection = new CommunityDetection();
+        this.componentDetection = new CommunityDetection();
 
         // 使用垂直布局
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -86,7 +86,7 @@ public class AnalysisPanel extends JPanel {
      */
     public void setGraph(SocialGraph graph) {
         // 清空所有结果显示
-        communityResultLabel.setText(" ");
+        componentResultLabel.setText(" ");
         degreeResultArea.setText("");
         deleteResultArea.setText("");
         recommendResultArea.setText("");
@@ -206,9 +206,9 @@ public class AnalysisPanel extends JPanel {
 
         // 第1行：结果标签（显示连通分量数量）
         gbc.gridy = 1;
-        communityResultLabel = new JLabel(" ");
-        communityResultLabel.setForeground(new Color(66, 133, 244)); // 蓝色文字
-        panel.add(communityResultLabel, gbc);
+        componentResultLabel = new JLabel(" ");
+        componentResultLabel.setForeground(new Color(66, 133, 244)); // 蓝色文字
+        panel.add(componentResultLabel, gbc);
 
         // 第2行：查找交往圈子按钮（查找选中节点所属的连通分量）
         gbc.gridy = 2;
@@ -230,11 +230,11 @@ public class AnalysisPanel extends JPanel {
         if (graph == null || graph.nodeCount == 0) return;
 
         // 检测连通分量
-        int componentCount = communityDetection.detectConnectedComponents(graph);
+        int componentCount = componentDetection.detect(graph);
 
         // 显示结果
-        communityResultLabel.setText("共" + componentCount + "个连通分量");
-        graphPanel.setCommunityCount(componentCount);
+        componentResultLabel.setText("共" + componentCount + "个连通分量");
+        graphPanel.setComponentCount(componentCount);
 
         // 如果有多个连通分量，自动切换到按社区着色模式
         if (componentCount > 1) {
@@ -259,18 +259,18 @@ public class AnalysisPanel extends JPanel {
             return;
         }
 
-        // 如果该节点还没有社区标记，先检测连通分量
-        if (graph.nodes[selectedNodeId].community < 0) {
-            communityDetection.detectConnectedComponents(graph);
+        // 如果该节点还没有标记，先检测连通分量
+        if (graph.vset[selectedNodeId] < 0) {
+            componentDetection.detect(graph);
         }
 
-        // 获取选中节点所属的社区编号
-        int targetCommunityId = graph.nodes[selectedNodeId].community;
+        // 获取选中节点所属的连通分量编号
+        int targetComponentId = graph.vset[selectedNodeId];
 
-        // 收集所有属于同一社区的节点
+        // 收集所有属于同一连通分量的节点
         Set<Integer> circleNodeIds = new HashSet<>();
         for (int nodeIndex = 0; nodeIndex < graph.nodeCount; nodeIndex++) {
-            if (graph.nodes[nodeIndex].community == targetCommunityId) {
+            if (graph.vset[nodeIndex] == targetComponentId) {
                 circleNodeIds.add(nodeIndex);
             }
         }
@@ -345,14 +345,14 @@ public class AnalysisPanel extends JPanel {
         }
 
         // 记录删除前的连通分量数量和节点名称
-        int componentCountBefore = communityDetection.detectConnectedComponents(graph);
+        int componentCountBefore = componentDetection.detect(graph);
         String deletedNodeName = graph.nodes[selectedNodeId].name;
 
         // 执行删除操作
         graph.removeNode(selectedNodeId);
 
         // 重新计算删除后的连通分量数量
-        int componentCountAfter = communityDetection.detectConnectedComponents(graph);
+        int componentCountAfter = componentDetection.detect(graph);
 
         // 显示删除结果
         deleteResultArea.setText("已删除节点 " + deletedNodeName + "\n" +

@@ -2,12 +2,9 @@ package algorithm;
 
 /**
  * 力导向布局算法 — 计算节点在画布上的位置
- * 
- * 本算法通过模拟物理力来安排节点的位置，使图的布局美观、均匀、无重叠。
- * 
  * 核心思想：
- * 1. 斥力阶段：所有节点之间互相排斥，距离越近斥力越大（像磁铁同极相斥）
- * 2. 引力阶段：有边相连的节点之间互相吸引，距离越远引力越大（像弹簧）
+ * 1. 斥力阶段：所有节点之间互相排斥，距离越近斥力越大
+ * 2. 引力阶段：有边相连的节点之间互相吸引，距离越远引力越大
  * 3. 更新位置：根据合力更新节点的速度和位置，并限制在画布范围内
  * 4. 防重叠阶段：检测并推开距离过近的节点
  * 
@@ -17,15 +14,15 @@ package algorithm;
 import model.SocialGraph;
 
 public class ForceLayout {
-    /** 斥力系数：控制节点间排斥力的大小，值越大节点越分散 */
+    /** 斥力系数 */
     private double repulsion = 10000;
-    /** 引力系数：控制边两端节点间吸引力的大小，值越大边越短 */
+    /** 引力系数*/
     private double attraction = 0.003;
-    /** 中心引力系数：所有节点向画布中心靠拢的力度 */
+    /** 中心引力系数 */
     private double centerGravity = 0.008;
-    /** 最大速度：限制节点每次迭代的移动距离，防止飞得太远 */
+    /** 最大速度 */
     private double maxSpeed = 10;
-    /** 最小间距：节点之间的最小允许距离，小于此距离会被推开 */
+    /** 最小间距 */
     private double minDistance = 70;
 
     /**
@@ -42,10 +39,6 @@ public class ForceLayout {
      *   4. 防重叠：检测并推开距离过近的节点
      * 
      * 【最终分离阶段】二次强力防重叠，确保所有节点不重叠
-     * 
-     * @param graph  社交网络图
-     * @param width  画布宽度（像素）
-     * @param height 画布高度（像素）
      */
     public void computeLayout(SocialGraph graph, int width, int height) {
         // ==================== 初始化阶段 ====================

@@ -12,9 +12,9 @@ import java.util.Set;
  */
 class GraphRenderer {
 
-    // ========== 社区颜色调色板 ==========
-    // 为不同社区预设不同的颜色，最多支持15种
-    private static final Color[] COMMUNITY_COLORS = {
+    // ========== 连通分量颜色调色板 ==========
+    // 为不同连通分量预设不同的颜色，最多支持15种
+    private static final Color[] COMPONENT_COLORS = {
         new Color(255, 107, 107),  // 红色调
         new Color(78, 205, 196),   // 青色调
         new Color(255, 230, 109),  // 黄色调
@@ -97,16 +97,16 @@ class GraphRenderer {
             }
             return new Color(129, 199, 132);     // 边缘人物 → 绿色
         } else if (panel.colorMode == 1) {
-            // 模式1：按社区着色
-            int communityId = currentNode.community;
+            // 模式1：按连通分量着色
+            int componentId = panel.graph.vset[nodeId];
 
-            // 如果社区ID无效，返回灰色
-            if (communityId < 0 || communityId >= COMMUNITY_COLORS.length) {
+            // 如果编号无效，返回灰色
+            if (componentId < 0 || componentId >= COMPONENT_COLORS.length) {
                 return Color.GRAY;
             }
 
-            // 使用社区ID对应的颜色
-            return COMMUNITY_COLORS[communityId % COMMUNITY_COLORS.length];
+            // 使用连通分量编号对应的颜色
+            return COMPONENT_COLORS[componentId % COMPONENT_COLORS.length];
         } else {
             // 模式2：统一颜色 → 蓝色
             return new Color(66, 133, 244);
@@ -409,19 +409,18 @@ class GraphRenderer {
             drawLegendItem(g2d, legendX, legendY, new Color(255, 193, 7), "活跃人物");
             legendY += 18;
             drawLegendItem(g2d, legendX, legendY, new Color(129, 199, 132), "边缘人物");
-        } else if (panel.colorMode == 1 && panel.communityCount > 0) {
-            // 模式1：按社区着色，最多显示5个社区
-            int maxDisplay = Math.min(panel.communityCount, 5);
-            for (int communityIndex = 0; communityIndex < maxDisplay; communityIndex++) {
-                Color communityColor = COMMUNITY_COLORS[communityIndex % COMMUNITY_COLORS.length];
-                String communityLabel = "社区 " + (communityIndex + 1);
-                drawLegendItem(g2d, legendX, legendY, communityColor, communityLabel);
+        } else if (panel.colorMode == 1 && panel.componentCount > 0) {
+            // 模式1：按连通分量着色，最多显示5个
+            int maxDisplay = Math.min(panel.componentCount, 5);
+            for (int componentIndex = 0; componentIndex < maxDisplay; componentIndex++) {
+                Color componentColor = COMPONENT_COLORS[componentIndex % COMPONENT_COLORS.length];
+                String componentLabel = "分量 " + (componentIndex + 1);
+                drawLegendItem(g2d, legendX, legendY, componentColor, componentLabel);
                 legendY += 18;
             }
-            // 如果社区数量超过5个，显示省略提示
-            if (panel.communityCount > 5) {
+            if (panel.componentCount > 5) {
                 g2d.setColor(Color.GRAY);
-                g2d.drawString("等" + panel.communityCount + "个社区", legendX + 18, legendY);
+                g2d.drawString("等" + panel.componentCount + "个连通分量", legendX + 18, legendY);
             }
         } else {
             // 模式2：统一颜色

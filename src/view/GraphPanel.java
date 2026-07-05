@@ -61,8 +61,8 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     /** 高亮节点集合：存储需要高亮显示的节点ID */
     Set<Integer> highlightedNodes;
 
-    /** 社区数量（用于设置图例显示） */
-    int communityCount;
+    /** 连通分量数量（用于设置图例显示） */
+    int componentCount;
     // ----
 
     // ========== 拖拽相关状态 ==========
@@ -106,7 +106,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         this.highlightedPath = new int[0];  // 默认无高亮路径
         this.highlightedNodes = new HashSet<>(); // 默认无高亮节点
         this.dragMode = false;          // 默认不处于拖拽模式
-        this.communityCount = 0;        // 默认社区数为0
+        this.componentCount = 0;        // 默认社区数为0
 
         // 设置面板背景色（浅灰蓝色）
         setBackground(new Color(245, 247, 250));
@@ -135,7 +135,7 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
         this.hoverNodeId = -1;
         this.highlightedPath = new int[0];
         this.highlightedNodes = new HashSet<>();
-        this.communityCount = 0;
+        this.componentCount = 0;
 
         // 重新计算节点布局
         relayout();
@@ -194,11 +194,11 @@ public class GraphPanel extends JPanel implements MouseListener, MouseMotionList
     }
 
     /**
-     * 设置社区数量（用于图例显示）
-     * @param count 社区数量
+     * 设置连通分量数量（用于图例显示）
+     * @param count 连通分量数量
      */
-    public void setCommunityCount(int count) {
-        this.communityCount = count;
+    public void setComponentCount(int count) {
+        this.componentCount = count;
     }
 
     /**
