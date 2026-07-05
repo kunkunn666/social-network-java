@@ -25,6 +25,8 @@ public class QueryPanel extends JPanel {
     private JTextField nHopField;
     private JTextField nHopNodeField;
     private JTextArea nHopResultArea;
+    private JTextField nearbyRadiusField;
+    private JTextArea nearbyResultArea;
 
     public QueryPanel(MainFrame mainFrame, GraphPanel graphPanel) {
         this.mainFrame = mainFrame;
@@ -44,6 +46,7 @@ public class QueryPanel extends JPanel {
         pathResultLabel.setText(" ");
         pathArea.setText("");
         nHopResultArea.setText("");
+        nearbyResultArea.setText("");
     }
 
     // ==================== 最短路径 ====================
@@ -252,14 +255,71 @@ public class QueryPanel extends JPanel {
     // ==================== 附近用户 ====================
 
     private JPanel createNearbyPanel() {
-        JPanel panel = new JPanel(new BorderLayout(3, 0));
-        panel.setBorder(BorderFactory.createTitledBorder("附近地理用户"));
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(createTitledBorder("附近地理用户"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(2, 2, 2, 2);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
+        panel.add(new JLabel("半径(km):"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1;
+        nearbyRadiusField = new JTextField("5", 6);
+        panel.add(nearbyRadiusField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2;
         JButton nearbyBtn = new JButton("检索附近用户");
-        nearbyBtn.addActionListener(e -> {
-            error("附近地理用户检索需要节点包含地理位置信息。\n当前数据集未包含地理坐标数据。");
-        });
-        panel.add(nearbyBtn, BorderLayout.CENTER);
+        nearbyBtn.addActionListener(e -> searchNearbyUsers());
+        panel.add(nearbyBtn, gbc);
+
+        gbc.gridy = 2; gbc.weighty = 1; gbc.fill = GridBagConstraints.BOTH;
+        nearbyResultArea = new JTextArea(4, 10);
+        nearbyResultArea.setEditable(false);
+        nearbyResultArea.setLineWrap(true);
+        nearbyResultArea.setWrapStyleWord(true);
+        nearbyResultArea.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        nearbyResultArea.setBackground(new Color(248, 248, 248));
+        JScrollPane scroll = new JScrollPane(nearbyResultArea);
+        panel.add(scroll, gbc);
+
         return panel;
+    }
+
+    public void searchNearbyUsers() {
+        SocialGraph graph = graphPanel.graph;
+        if (graph == null || graph.nodeCount == 0) return;
+
+        int centerId = graphPanel.getSelectedNodeId();
+        if (centerId < 0) {
+            JOptionPane.showMessageDialog(this, "请先在图中点击选择一个节点", "提示", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        double radius;
+        try { radius = Double.parseDouble(nearbyRadiusField.getText().trim()); }
+        catch (NumberFormatException e) { error("请输入有效半径"); return; }
+
+        model.Node[] nearby = graph.findNearby(centerId, radius);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(graph.nodes[centerId].name).append(" 周围 ").append(radius).append("km:\n");
+        if (nearby.length == 0) {
+            sb.append("  未找到附近用户");
+        } else {
+            for (model.Node n : nearby) {
+                double dist = graph.nodes[centerId].geoDistanceTo(n);
+                sb.append("  ").append(n.name).append(" (距离").append(String.format("%.1f", dist)).append("km)\n");
+            }
+        }
+        nearbyResultArea.setText(sb.toString());
+
+        // 高亮附近节点
+        java.util.Set<Integer> nearbyIds = new java.util.HashSet<>();
+        nearbyIds.add(centerId);
+        for (model.Node n : nearby) nearbyIds.add(graph.findNodeId(n.name));
+        graphPanel.setHighlightedNodes(nearbyIds);
+
+        mainFrame.updateStatus(graph.nodes[centerId].name + " 周围" + radius + "km: " + nearby.length + "个节点");
     }
 
     // ==================== 辅助 ====================

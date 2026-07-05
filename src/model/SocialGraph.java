@@ -117,10 +117,7 @@ public class SocialGraph {
         if (nodeFile != null) {
             loadNodeCoordinates(nodeFile);
         } else {
-            for (int i = 0; i < nodeCount; i++) {
-                nodes[i].longitude = 116.2 + (double) i / nodeCount * 0.6;
-                nodes[i].latitude = 39.8 + (double) (i % 10) / 10 * 0.4;
-            }
+            System.out.println("错误: 未找到节点坐标文件 - " + filepath.replace(".csv", "_nodes.csv"));
         }
 
         try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
@@ -153,6 +150,11 @@ public class SocialGraph {
     }
 
     private void loadNodeCoordinates(String filepath) {
+        File f = new File(filepath);
+        if (!f.exists()) {
+            System.out.println("错误: 节点坐标文件不存在 - " + filepath);
+            return;
+        }
         try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
             String line;
             boolean isFirstLine = true;
@@ -171,22 +173,11 @@ public class SocialGraph {
 
                 if (nodeId >= 0) {
                     try {
-                        boolean is3Column;
-                        try {
-                            Double.parseDouble(parts[1].trim());
-                            is3Column = true;
-                        } catch (NumberFormatException e) {
-                            is3Column = false;
-                        }
-
-                        if (is3Column) {
-                            nodes[nodeId].longitude = Double.parseDouble(parts[1].trim());
-                            nodes[nodeId].latitude = Double.parseDouble(parts[2].trim());
-                        } else if (parts.length >= 4) {
-                            nodes[nodeId].longitude = Double.parseDouble(parts[2].trim());
-                            nodes[nodeId].latitude = Double.parseDouble(parts[3].trim());
-                        }
-                    } catch (NumberFormatException ignored) {}
+                        nodes[nodeId].longitude = Double.parseDouble(parts[1].trim());
+                        nodes[nodeId].latitude = Double.parseDouble(parts[2].trim());
+                    } catch (NumberFormatException e) {
+                        System.out.println("错误: 坐标格式错误 - " + line);
+                    }
                 }
             }
         } catch (Exception e) {
